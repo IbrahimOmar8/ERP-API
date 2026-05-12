@@ -125,7 +125,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final sale = await PosService.createSale(
         cashierUserId: auth.userId,
         customerId: cart.customerId,
-        warehouseId: session.current!.cashRegisterId, // Use warehouse from cash register
+        warehouseId: session.current!.warehouseId,
         cashSessionId: session.current!.id,
         items: cart.lines
             .map((l) => {

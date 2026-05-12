@@ -28,6 +28,8 @@ namespace Application.DTOs.POS
         public Guid Id { get; set; }
         public Guid CashRegisterId { get; set; }
         public string? CashRegisterName { get; set; }
+        public Guid WarehouseId { get; set; }
+        public string? WarehouseName { get; set; }
         public Guid CashierUserId { get; set; }
         public DateTime OpenedAt { get; set; }
         public DateTime? ClosedAt { get; set; }

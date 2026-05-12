@@ -2,6 +2,8 @@ class CashSession {
   final String id;
   final String cashRegisterId;
   final String? cashRegisterName;
+  final String warehouseId;
+  final String? warehouseName;
   final String cashierUserId;
   final DateTime openedAt;
   final DateTime? closedAt;
@@ -16,6 +18,8 @@ class CashSession {
     required this.id,
     required this.cashRegisterId,
     this.cashRegisterName,
+    required this.warehouseId,
+    this.warehouseName,
     required this.cashierUserId,
     required this.openedAt,
     this.closedAt,
@@ -31,6 +35,8 @@ class CashSession {
         id: json['id'],
         cashRegisterId: json['cashRegisterId'],
         cashRegisterName: json['cashRegisterName'],
+        warehouseId: json['warehouseId'] ?? '',
+        warehouseName: json['warehouseName'],
         cashierUserId: json['cashierUserId'],
         openedAt: DateTime.parse(json['openedAt']),
         closedAt: json['closedAt'] != null ? DateTime.parse(json['closedAt']) : null,

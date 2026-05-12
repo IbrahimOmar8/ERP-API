@@ -71,6 +71,11 @@ namespace Application.Services.POS
 
         public async Task<SaleDto> CreateAsync(CreateSaleDto dto, Guid cashierUserId)
         {
+            if (dto.Items == null || dto.Items.Count == 0)
+                throw new InvalidOperationException("لا يمكن إنشاء فاتورة بدون أصناف");
+            if (dto.Payments == null || dto.Payments.Count == 0)
+                throw new InvalidOperationException("يجب إدخال طريقة دفع واحدة على الأقل");
+
             // Validate session is open
             var session = await _context.CashSessions.FindAsync(dto.CashSessionId)
                 ?? throw new InvalidOperationException("جلسة الكاش غير موجودة");
@@ -161,26 +166,35 @@ namespace Application.Services.POS
                 && !sale.Payments.Any(p => p.Method == PaymentMethod.Credit))
                 throw new InvalidOperationException("المبلغ المدفوع أقل من إجمالي الفاتورة");
 
-            _context.Sales.Add(sale);
-            await _context.SaveChangesAsync();
-
-            // Decrement stock for each item
-            foreach (var item in sale.Items)
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
             {
-                await _stockService.ApplyMovementAsync(item.ProductId, sale.WarehouseId,
-                    MovementType.SaleOut, item.Quantity, item.UnitCost,
-                    sale.Id, "Sale", sale.InvoiceNumber, cashierUserId);
-            }
+                _context.Sales.Add(sale);
+                await _context.SaveChangesAsync();
 
-            // Update customer balance for credit sales
-            if (sale.CustomerId.HasValue && sale.PaidAmount < sale.Total)
-            {
-                var customer = await _context.Customers.FindAsync(sale.CustomerId.Value);
-                if (customer != null)
+                foreach (var item in sale.Items)
                 {
-                    customer.Balance += (sale.Total - sale.PaidAmount);
-                    await _context.SaveChangesAsync();
+                    await _stockService.ApplyMovementAsync(item.ProductId, sale.WarehouseId,
+                        MovementType.SaleOut, item.Quantity, item.UnitCost,
+                        sale.Id, "Sale", sale.InvoiceNumber, cashierUserId);
                 }
+
+                if (sale.CustomerId.HasValue && sale.PaidAmount < sale.Total)
+                {
+                    var customer = await _context.Customers.FindAsync(sale.CustomerId.Value);
+                    if (customer != null)
+                    {
+                        customer.Balance += (sale.Total - sale.PaidAmount);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
             }
 
             return (await GetByIdAsync(sale.Id))!;
@@ -225,17 +239,28 @@ namespace Application.Services.POS
                 }).ToList()
             };
 
-            _context.SaleReturns.Add(saleReturn);
-            sale.Status = SaleStatus.Refunded;
-
-            foreach (var item in sale.Items ?? new List<SaleItem>())
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
             {
-                await _stockService.ApplyMovementAsync(item.ProductId, sale.WarehouseId,
-                    MovementType.ReturnIn, item.Quantity, item.UnitCost,
-                    saleReturn.Id, "SaleReturn", returnNumber, userId);
+                _context.SaleReturns.Add(saleReturn);
+                sale.Status = SaleStatus.Refunded;
+                await _context.SaveChangesAsync();
+
+                foreach (var item in sale.Items ?? new List<SaleItem>())
+                {
+                    await _stockService.ApplyMovementAsync(item.ProductId, sale.WarehouseId,
+                        MovementType.ReturnIn, item.Quantity, item.UnitCost,
+                        saleReturn.Id, "SaleReturn", returnNumber, userId);
+                }
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
             }
 
-            await _context.SaveChangesAsync();
             return await GetByIdAsync(id);
         }
 

@@ -88,22 +88,32 @@ namespace Application.Services.Inventory
             invoice.VatAmount = totalVat;
             invoice.Total = subTotal - totalDiscount + totalVat;
 
-            _context.PurchaseInvoices.Add(invoice);
-            await _context.SaveChangesAsync();
-
-            // Update stock and supplier balance
-            foreach (var item in invoice.Items)
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
             {
-                await _stockService.ApplyMovementAsync(item.ProductId, invoice.WarehouseId,
-                    MovementType.PurchaseIn, item.Quantity, item.UnitCost,
-                    invoice.Id, "PurchaseInvoice", invoice.InvoiceNumber, userId);
-            }
-
-            var supplier = await _context.Suppliers.FindAsync(invoice.SupplierId);
-            if (supplier != null)
-            {
-                supplier.Balance += invoice.Total - invoice.Paid;
+                _context.PurchaseInvoices.Add(invoice);
                 await _context.SaveChangesAsync();
+
+                foreach (var item in invoice.Items)
+                {
+                    await _stockService.ApplyMovementAsync(item.ProductId, invoice.WarehouseId,
+                        MovementType.PurchaseIn, item.Quantity, item.UnitCost,
+                        invoice.Id, "PurchaseInvoice", invoice.InvoiceNumber, userId);
+                }
+
+                var supplier = await _context.Suppliers.FindAsync(invoice.SupplierId);
+                if (supplier != null)
+                {
+                    supplier.Balance += invoice.Total - invoice.Paid;
+                    await _context.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
             }
 
             return (await GetByIdAsync(invoice.Id))!;
