@@ -1,49 +1,91 @@
-# ✅ ERDTask  System
+# نظام ERP - المخازن ونقاط البيع (Egyptian Edition)
 
-This project is a ERDTask and Process Tracking System** that allows organizations to define, execute, and monitor multi-step ERDTasks. Developed with **.NET 7 Web API** and an **Angular 18 Admin Dashboard**.
+نظام متكامل لإدارة المخازن ونقاط البيع متوافق مع النظام الضريبي المصري والفاتورة الإلكترونية (ETA).
 
----
+## المكونات
 
-## ✨ Features
+### 1. Backend (.NET 8 Clean Architecture)
+- **Domain** - النماذج والكيانات والـ Enums
+- **Application** - DTOs والخدمات وواجهات الأعمال
+- **Infrastructure** - EF Core (SQLite)، DbContext، Migrations
+- **ERPTask** - مشروع API (Controllers + Swagger)
 
-- Define and manage ERDTasks with multiple steps
-- Assign tasks to different user roles (employee, manager, finance)
-- Execute steps with input, approval, or rejection logic
-- Built-in validation middleware simulating external API checks
-- Admin dashboard with real-time ERDTask tracking
+### 2. Mobile (Flutter)
+تطبيق موبايل في مجلد `Mobile/` يدعم:
+- نقاط البيع (POS) مع قارئ الباركود
+- إدارة جلسات الكاش
+- عرض المخزون والأرصدة
+- ضريبة القيمة المضافة المصرية (14%)
+- تكامل الفاتورة الإلكترونية (ETA)
 
----
+## الوحدات الوظيفية
 
-## 🚀 Tech Stack
+### المخازن
+- الأصناف (مع SKU وBarcode وأكواد ETA/GS1)
+- الفئات والوحدات
+- المخازن المتعددة
+- حركات المخزون (وارد، صادر، تحويل، تسوية، مرتجع)
+- التكلفة المتوسطة (Weighted Average)
+- فواتير المشتريات + الموردون
+- تحويلات المخازن
+- ضبط المخزون (Stock Adjustment)
 
-- 🔧 .NET 7 Web API + Entity Framework Core
-- 🎨 Angular 18 (Standalone API) + Angular Material
-- 🧠 SQLite (local database)
-- 🧪 Swagger UI for interactive API documentation
+### نقاط البيع
+- العملاء (أفراد وشركات مع رقم تسجيل ضريبي)
+- ماكينات الكاشير وجلسات الكاش
+- فواتير البيع متعددة طرق الدفع (كاش، بطاقة، InstaPay، محفظة، آجل)
+- المرتجعات
+- خصم على مستوى البند أو الفاتورة
+- ضريبة القيمة المضافة المصرية
 
----
+### الامتثال المصري
+- ملف الشركة (الرقم الضريبي، السجل التجاري، كود النشاط)
+- معدلات الضرائب (T1, T2, T3)
+- إرسال الفواتير الإلكترونية للمصلحة (ETA Submissions)
 
+## التشغيل
 
----
-
-## 🔧 Setup Instructions
-
-### 🖥️ Backend (.NET Core)
-
+### Backend
 ```bash
-cd ERDTask
-dotnet ef migrations add InitialCreate --project Infrastructure --startup-project ERPTask
- ERPTask % dotnet ef database update --project Infrastructure --startup-project ERPTask
-dotnet ef database update
+cd ERPTask
+dotnet restore
+dotnet ef migrations add InitialCreate --project ../Infrastructure --startup-project .
+dotnet ef database update --project ../Infrastructure --startup-project .
 dotnet run
+```
 
+Swagger متاح على: `http://localhost:5000/swagger`
 
+### Mobile
+```bash
+cd Mobile
+flutter pub get
+flutter run
+```
 
-Folder Structure
+## التقنيات
 
-/backend
-  ├── Controllers
-  ├── Models
-  ├── DTOs
-  ├── Middleware
-  └── Services
+- 🔧 .NET 8 Web API + EF Core 8 + SQLite
+- 📱 Flutter 3.19+
+- 📊 AutoMapper, MediatR
+- 🧪 Swagger UI
+- 🧾 ETA E-Invoicing (Egyptian Tax Authority)
+
+## بنية المشروع
+
+```
+/
+├── Domain/              # نماذج البيانات
+│   ├── Models/
+│   │   ├── Inventory/   # نماذج المخازن
+│   │   ├── POS/         # نماذج نقاط البيع
+│   │   └── Egypt/       # نماذج الامتثال المصري
+│   └── Enums/
+├── Application/         # المنطق الأعمال
+│   ├── DTOs/
+│   ├── Services/
+│   └── Inerfaces/
+├── Infrastructure/      # EF Core + الـ DbContext
+├── ERPTask/             # Web API + Controllers
+└── Mobile/              # تطبيق Flutter
+```

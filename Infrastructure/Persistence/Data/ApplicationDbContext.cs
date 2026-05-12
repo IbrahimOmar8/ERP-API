@@ -1,6 +1,8 @@
-﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Domain.Models;
+using Domain.Models.Inventory;
+using Domain.Models.POS;
+using Domain.Models.Egypt;
 
 namespace Infrastructure.Data
 {
@@ -9,8 +11,36 @@ namespace Infrastructure.Data
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
         public DbSet<Employee> Employees { get; set; }
-        public DbSet<Department> Departments  { get; set; }
+        public DbSet<Department> Departments { get; set; }
         public DbSet<LogHistory> LogHistories { get; set; }
+
+        // Inventory
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Unit> Units { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<Warehouse> Warehouses { get; set; }
+        public DbSet<StockItem> StockItems { get; set; }
+        public DbSet<StockMovement> StockMovements { get; set; }
+        public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<PurchaseInvoice> PurchaseInvoices { get; set; }
+        public DbSet<PurchaseInvoiceItem> PurchaseInvoiceItems { get; set; }
+        public DbSet<StockTransfer> StockTransfers { get; set; }
+        public DbSet<StockTransferItem> StockTransferItems { get; set; }
+
+        // POS
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<CashRegister> CashRegisters { get; set; }
+        public DbSet<CashSession> CashSessions { get; set; }
+        public DbSet<Sale> Sales { get; set; }
+        public DbSet<SaleItem> SaleItems { get; set; }
+        public DbSet<SalePayment> SalePayments { get; set; }
+        public DbSet<SaleReturn> SaleReturns { get; set; }
+        public DbSet<SaleReturnItem> SaleReturnItems { get; set; }
+
+        // Egypt
+        public DbSet<CompanyProfile> CompanyProfiles { get; set; }
+        public DbSet<TaxRate> TaxRates { get; set; }
+        public DbSet<EInvoiceSubmission> EInvoiceSubmissions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -18,6 +48,112 @@ namespace Infrastructure.Data
                 .HasMany(w => w.Employees)
                 .WithOne(s => s.Department)
                 .HasForeignKey(s => s.DepartmentId);
+
+            // Money columns with precision 18,4 to support EGP small denominations
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var prop in entity.GetProperties())
+                {
+                    if (prop.ClrType == typeof(decimal) || prop.ClrType == typeof(decimal?))
+                    {
+                        prop.SetPrecision(18);
+                        prop.SetScale(4);
+                    }
+                }
+            }
+
+            // Inventory
+            modelBuilder.Entity<Category>()
+                .HasOne(c => c.ParentCategory)
+                .WithMany(c => c.SubCategories)
+                .HasForeignKey(c => c.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Unit)
+                .WithMany()
+                .HasForeignKey(p => p.UnitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Sku).IsUnique();
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Barcode);
+
+            modelBuilder.Entity<StockItem>()
+                .HasIndex(s => new { s.ProductId, s.WarehouseId }).IsUnique();
+
+            modelBuilder.Entity<StockItem>()
+                .HasOne(s => s.Product)
+                .WithMany(p => p.StockItems)
+                .HasForeignKey(s => s.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<StockItem>()
+                .HasOne(s => s.Warehouse)
+                .WithMany(w => w.StockItems)
+                .HasForeignKey(s => s.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<StockMovement>()
+                .HasOne(m => m.Product).WithMany().HasForeignKey(m => m.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<StockMovement>()
+                .HasOne(m => m.Warehouse).WithMany().HasForeignKey(m => m.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<StockMovement>().Ignore(m => m.TotalCost);
+
+            modelBuilder.Entity<PurchaseInvoice>()
+                .HasMany(p => p.Items).WithOne(i => i.PurchaseInvoice)
+                .HasForeignKey(i => i.PurchaseInvoiceId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PurchaseInvoice>().Ignore(p => p.Remaining);
+
+            modelBuilder.Entity<StockTransfer>()
+                .HasMany(t => t.Items).WithOne(i => i.StockTransfer)
+                .HasForeignKey(i => i.StockTransferId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<StockTransfer>()
+                .HasOne(t => t.FromWarehouse).WithMany().HasForeignKey(t => t.FromWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<StockTransfer>()
+                .HasOne(t => t.ToWarehouse).WithMany().HasForeignKey(t => t.ToWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // POS
+            modelBuilder.Entity<Sale>()
+                .HasMany(s => s.Items).WithOne(i => i.Sale)
+                .HasForeignKey(i => i.SaleId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Sale>()
+                .HasMany(s => s.Payments).WithOne(p => p.Sale)
+                .HasForeignKey(p => p.SaleId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Sale>()
+                .HasIndex(s => s.InvoiceNumber).IsUnique();
+            modelBuilder.Entity<Sale>()
+                .HasOne(s => s.Customer).WithMany(c => c.Sales)
+                .HasForeignKey(s => s.CustomerId).OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<SaleReturn>()
+                .HasMany(r => r.Items).WithOne(i => i.SaleReturn)
+                .HasForeignKey(i => i.SaleReturnId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<SaleReturn>()
+                .HasOne(r => r.OriginalSale).WithMany().HasForeignKey(r => r.OriginalSaleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CashSession>()
+                .HasOne(s => s.CashRegister).WithMany(r => r.Sessions)
+                .HasForeignKey(s => s.CashRegisterId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<CashSession>()
+                .HasMany(s => s.Sales).WithOne(s => s.CashSession)
+                .HasForeignKey(s => s.CashSessionId).OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CashRegister>()
+                .HasOne(r => r.Warehouse).WithMany().HasForeignKey(r => r.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
