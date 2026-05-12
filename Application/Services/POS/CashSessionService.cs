@@ -16,7 +16,8 @@ namespace Application.Services.POS
         public async Task<CashSessionDto?> GetCurrentSessionAsync(Guid userId)
         {
             var session = await _context.CashSessions
-                .Include(s => s.CashRegister)
+                .Include(s => s.CashRegister)!
+                .ThenInclude(r => r!.Warehouse)
                 .FirstOrDefaultAsync(s =>
                     s.CashierUserId == userId && s.Status == CashSessionStatus.Open);
 
@@ -26,7 +27,8 @@ namespace Application.Services.POS
         public async Task<List<CashSessionDto>> GetAllAsync()
         {
             return await _context.CashSessions
-                .Include(s => s.CashRegister)
+                .Include(s => s.CashRegister)!
+                .ThenInclude(r => r!.Warehouse)
                 .OrderByDescending(s => s.OpenedAt)
                 .Select(s => Map(s))
                 .ToListAsync();
@@ -35,7 +37,8 @@ namespace Application.Services.POS
         public async Task<CashSessionDto?> GetByIdAsync(Guid id)
         {
             var session = await _context.CashSessions
-                .Include(s => s.CashRegister)
+                .Include(s => s.CashRegister)!
+                .ThenInclude(r => r!.Warehouse)
                 .FirstOrDefaultAsync(s => s.Id == id);
             return session == null ? null : Map(session);
         }
@@ -110,6 +113,8 @@ namespace Application.Services.POS
             Id = s.Id,
             CashRegisterId = s.CashRegisterId,
             CashRegisterName = s.CashRegister?.Name,
+            WarehouseId = s.CashRegister?.WarehouseId ?? Guid.Empty,
+            WarehouseName = s.CashRegister?.Warehouse?.NameAr,
             CashierUserId = s.CashierUserId,
             OpenedAt = s.OpenedAt,
             ClosedAt = s.ClosedAt,
