@@ -3,6 +3,7 @@ import '../../../core/utils/money.dart';
 import '../models/einvoice_submission.dart';
 import '../models/sale.dart';
 import '../services/eta_service.dart';
+import '../services/receipt_pdf_service.dart';
 
 class ReceiptScreen extends StatefulWidget {
   final Sale sale;
@@ -89,6 +90,14 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       appBar: AppBar(
         title: const Text('الفاتورة'),
         actions: [
+          IconButton(
+              icon: const Icon(Icons.print),
+              tooltip: 'طباعة',
+              onPressed: () => ReceiptPdfService.print(sale)),
+          IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'مشاركة PDF',
+              onPressed: () => ReceiptPdfService.share(sale)),
           IconButton(
               icon: const Icon(Icons.home),
               onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst)),
