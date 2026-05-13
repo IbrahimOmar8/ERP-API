@@ -15,8 +15,10 @@ class ApiConfig {
   static const String categories = '/Categories';
   static const String units = '/Units';
   static const String stock = '/Stock';
+  static const String stockTransfers = '/StockTransfers';
   static const String suppliers = '/Suppliers';
   static const String purchaseInvoices = '/PurchaseInvoices';
+  static const String reports = '/reports';
 
   static const String customers = '/Customers';
   static const String cashRegisters = '/CashRegisters';

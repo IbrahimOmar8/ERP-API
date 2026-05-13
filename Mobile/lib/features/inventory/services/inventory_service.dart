@@ -3,6 +3,7 @@ import '../../../core/config/api_config.dart';
 import '../models/category.dart';
 import '../models/product.dart';
 import '../models/stock_item.dart';
+import '../models/stock_transfer.dart';
 import '../models/warehouse.dart';
 
 class InventoryService {
@@ -58,5 +59,35 @@ class InventoryService {
       'newQuantity': newQuantity,
       'reason': reason,
     });
+  }
+
+  // Stock transfers
+  static Future<List<StockTransfer>> getTransfers({String? warehouseId}) async {
+    final data = await apiClient
+        .get(ApiConfig.stockTransfers, query: {'warehouseId': warehouseId});
+    return (data as List).map((e) => StockTransfer.fromJson(e)).toList();
+  }
+
+  static Future<StockTransfer> createTransfer({
+    required String fromWarehouseId,
+    required String toWarehouseId,
+    String? notes,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final data = await apiClient.post(ApiConfig.stockTransfers, {
+      'fromWarehouseId': fromWarehouseId,
+      'toWarehouseId': toWarehouseId,
+      'notes': notes,
+      'items': items,
+    });
+    return StockTransfer.fromJson(data);
+  }
+
+  static Future<void> completeTransfer(String id) async {
+    await apiClient.post('${ApiConfig.stockTransfers}/$id/complete', {});
+  }
+
+  static Future<void> cancelTransfer(String id) async {
+    await apiClient.delete('${ApiConfig.stockTransfers}/$id');
   }
 }

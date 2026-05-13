@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../inventory/screens/products_screen.dart';
 import '../../inventory/screens/stock_screen.dart';
+import '../../inventory/screens/transfers_screen.dart';
 import '../../pos/screens/pos_screen.dart';
 import '../../pos/screens/session_screen.dart';
 import '../../pos/screens/sales_history_screen.dart';
+import '../../reports/screens/dashboard_screen.dart';
+import '../../reports/screens/sales_report_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -82,6 +85,19 @@ class HomeScreen extends StatelessWidget {
                     const ProductsScreen()),
                 _MenuItem(Icons.warehouse, 'الرصيد', Colors.teal,
                     const StockScreen()),
+                _MenuItem(Icons.swap_horiz, 'تحويلات', Colors.brown,
+                    const TransfersScreen()),
+              ]),
+              const SizedBox(height: 24),
+              const Text('التقارير',
+                  style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              _GridMenu(items: [
+                _MenuItem(Icons.dashboard, 'لوحة التحكم', Colors.deepPurple,
+                    const DashboardScreen()),
+                _MenuItem(Icons.analytics, 'تقرير المبيعات', Colors.pink,
+                    const SalesReportScreen()),
               ]),
             ],
           ),
