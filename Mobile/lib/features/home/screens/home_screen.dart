@@ -48,6 +48,10 @@ class HomeScreen extends StatelessWidget {
                             Text(auth.userName,
                                 style: const TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold)),
+                            if (auth.roles.isNotEmpty)
+                              Text(auth.roles.join('، '),
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.black54)),
                           ],
                         ),
                       ),

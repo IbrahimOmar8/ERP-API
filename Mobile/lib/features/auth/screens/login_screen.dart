@@ -11,12 +11,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _userController = TextEditingController(text: 'cashier');
+  final _userController = TextEditingController(text: 'admin');
   final _passController = TextEditingController(text: '');
-  bool _loading = false;
+  bool _obscure = true;
+  String? _error;
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -38,14 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           .headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text('ERP - Egyptian Edition',
+                  const Text('ERP - Egyptian Edition',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey,
-                          )),
+                      style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _userController,
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'اسم المستخدم',
                       prefixIcon: Icon(Icons.person),
@@ -56,16 +57,43 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
+                    obscureText: _obscure,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _login(),
+                    decoration: InputDecoration(
                       labelText: 'كلمة المرور',
-                      prefixIcon: Icon(Icons.lock),
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                      ),
                     ),
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'برجاء إدخال كلمة المرور' : null,
                   ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(_error!,
+                                  style: const TextStyle(color: Colors.red))),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: _loading ? null : _login,
-                    child: _loading
+                    onPressed: auth.loading ? null : _login,
+                    child: auth.loading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -73,6 +101,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 strokeWidth: 2, color: Colors.white))
                         : const Text('تسجيل الدخول'),
                   ),
+                  const SizedBox(height: 12),
+                  const Text(
+                      'الحساب الافتراضي: admin / Admin@1234',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
@@ -84,13 +117,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+    setState(() => _error = null);
     try {
       await context
           .read<AuthProvider>()
           .login(_userController.text.trim(), _passController.text);
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      setState(() => _error = e.toString().replaceAll('ApiException', '').trim());
     }
   }
 }

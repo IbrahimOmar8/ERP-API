@@ -3,6 +3,7 @@ using Domain.Models;
 using Domain.Models.Inventory;
 using Domain.Models.POS;
 using Domain.Models.Egypt;
+using Domain.Models.Auth;
 
 namespace Infrastructure.Data
 {
@@ -41,6 +42,12 @@ namespace Infrastructure.Data
         public DbSet<CompanyProfile> CompanyProfiles { get; set; }
         public DbSet<TaxRate> TaxRates { get; set; }
         public DbSet<EInvoiceSubmission> EInvoiceSubmissions { get; set; }
+
+        // Auth
+        public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -154,6 +161,29 @@ namespace Infrastructure.Data
             modelBuilder.Entity<CashRegister>()
                 .HasOne(r => r.Warehouse).WithMany().HasForeignKey(r => r.WarehouseId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Auth
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.UserName).IsUnique();
+
+            modelBuilder.Entity<Role>()
+                .HasIndex(r => r.Name).IsUnique();
+
+            modelBuilder.Entity<UserRole>()
+                .HasKey(ur => new { ur.UserId, ur.RoleId });
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.User).WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role).WithMany(r => r.UserRoles)
+                .HasForeignKey(ur => ur.RoleId).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(t => t.User).WithMany()
+                .HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(t => t.Token).IsUnique();
+            modelBuilder.Entity<RefreshToken>().Ignore(t => t.IsActive);
         }
     }
 }

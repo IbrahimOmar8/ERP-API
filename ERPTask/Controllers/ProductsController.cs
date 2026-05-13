@@ -1,11 +1,14 @@
 using Application.DTOs.Inventory;
 using Application.Inerfaces.Inventory;
+using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProductsController : ControllerBase
     {
         private readonly IProductService _service;
@@ -24,14 +27,17 @@ namespace ERPTask.Controllers
             (await _service.GetByBarcodeAsync(barcode)) is { } p ? Ok(p) : NotFound();
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.WarehouseKeeper}")]
         public async Task<IActionResult> Create(CreateProductDto dto)
             => Ok(await _service.CreateAsync(dto));
 
         [HttpPut("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.WarehouseKeeper}")]
         public async Task<IActionResult> Update(Guid id, UpdateProductDto dto) =>
             (await _service.UpdateAsync(id, dto)) is { } p ? Ok(p) : NotFound();
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
         public async Task<IActionResult> Delete(Guid id)
             => await _service.DeleteAsync(id) ? NoContent() : NotFound();
     }

@@ -24,9 +24,9 @@ class PosService {
   }
 
   // Sessions
-  static Future<CashSession?> getCurrentSession(String userId) async {
+  static Future<CashSession?> getCurrentSession(String _userId) async {
     try {
-      final data = await apiClient.get('${ApiConfig.cashSessions}/current/$userId');
+      final data = await apiClient.get('${ApiConfig.cashSessions}/current');
       return data == null ? null : CashSession.fromJson(data);
     } on ApiException catch (e) {
       if (e.statusCode == 404) return null;
@@ -35,9 +35,9 @@ class PosService {
   }
 
   static Future<CashSession> openSession(
-      String userId, String registerId, double openingBalance) async {
+      String _userId, String registerId, double openingBalance) async {
     final data = await apiClient.post(
-      '${ApiConfig.cashSessions}/open/$userId',
+      '${ApiConfig.cashSessions}/open',
       {
         'cashRegisterId': registerId,
         'openingBalance': openingBalance,
@@ -67,7 +67,7 @@ class PosService {
     double discountPercent = 0,
     String? notes,
   }) async {
-    final data = await apiClient.post('${ApiConfig.sales}/$cashierUserId', {
+    final data = await apiClient.post(ApiConfig.sales, {
       'customerId': customerId,
       'warehouseId': warehouseId,
       'cashSessionId': cashSessionId,
@@ -91,10 +91,10 @@ class PosService {
     return data == null ? null : Sale.fromJson(data);
   }
 
-  static Future<Sale?> refund(String saleId, String reason, String userId) async {
+  static Future<Sale?> refund(String saleId, String reason) async {
     final data = await apiClient.post(
       '${ApiConfig.sales}/$saleId/refund',
-      {'reason': reason, 'userId': userId},
+      {'reason': reason},
     );
     return data == null ? null : Sale.fromJson(data);
   }

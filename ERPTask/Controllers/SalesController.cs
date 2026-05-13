@@ -1,12 +1,16 @@
+using System.Security.Claims;
 using Application.DTOs.POS;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.POS;
+using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Cashier},{Roles.Accountant}")]
     public class SalesController : ControllerBase
     {
         private readonly ISaleService _service;
@@ -18,6 +22,16 @@ namespace ERPTask.Controllers
             _eInvoiceService = eInvoiceService;
         }
 
+        private Guid CurrentUserId
+        {
+            get
+            {
+                var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? User.FindFirst("sub")?.Value;
+                return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] SaleFilterDto filter)
             => Ok(await _service.GetAllAsync(filter));
@@ -26,20 +40,21 @@ namespace ERPTask.Controllers
         public async Task<IActionResult> Get(Guid id) =>
             (await _service.GetByIdAsync(id)) is { } s ? Ok(s) : NotFound();
 
-        [HttpPost("{cashierUserId}")]
-        public async Task<IActionResult> Create(Guid cashierUserId, CreateSaleDto dto)
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateSaleDto dto)
         {
-            try { return Ok(await _service.CreateAsync(dto, cashierUserId)); }
+            try { return Ok(await _service.CreateAsync(dto, CurrentUserId)); }
             catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
         }
 
         [HttpPost("{id}/cancel")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
         public async Task<IActionResult> Cancel(Guid id)
             => await _service.CancelAsync(id) ? Ok() : NotFound();
 
         [HttpPost("{id}/refund")]
         public async Task<IActionResult> Refund(Guid id, [FromBody] RefundRequest request) =>
-            (await _service.RefundAsync(id, request.Reason, request.UserId)) is { } s
+            (await _service.RefundAsync(id, request.Reason, CurrentUserId)) is { } s
                 ? Ok(s) : NotFound();
 
         [HttpPost("{id}/submit-eta")]
@@ -49,6 +64,6 @@ namespace ERPTask.Controllers
             catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
         }
 
-        public record RefundRequest(string? Reason, Guid? UserId);
+        public record RefundRequest(string? Reason);
     }
 }

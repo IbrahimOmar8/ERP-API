@@ -49,10 +49,21 @@
 ```bash
 cd ERPTask
 dotnet restore
-dotnet ef migrations add InitialCreate --project ../Infrastructure --startup-project .
-dotnet ef database update --project ../Infrastructure --startup-project .
 dotnet run
 ```
+
+عند أول تشغيل سيتم إنشاء قاعدة البيانات وحساب المدير الافتراضي:
+- **اسم المستخدم:** `admin`
+- **كلمة المرور:** `Admin@1234` (غيّرها فوراً عبر `POST /api/Auth/change-password`)
+
+> ⚠️ **هام:** قبل التشغيل في بيئة الإنتاج، عدّل `appsettings.json` ✦ `Jwt:Key` لمفتاح عشوائي طويل (32+ حرف) و `DefaultAdminPassword`.
+
+### الأدوار
+- `Admin` - كل الصلاحيات
+- `Manager` - إدارة الأصناف، المخازن، الموظفين، المبيعات
+- `Cashier` - فتح/إغلاق جلسة وبيع
+- `WarehouseKeeper` - إدارة الأصناف والمخزون والمشتريات
+- `Accountant` - الفواتير والمدفوعات والمرتجعات
 
 Swagger متاح على: `http://localhost:5000/swagger`
 
