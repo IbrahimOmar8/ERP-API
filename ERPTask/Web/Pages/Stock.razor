@@ -1,0 +1,41 @@
+@page "/stock"
+@namespace ERPTask.Web.Pages
+@attribute [Authorize]
+@inject IReportService Reports
+
+<h1>تقرير الرصيد</h1>
+
+<div class="toolbar">
+    <label><input type="checkbox" @bind="_onlyLow" /> أصناف بحد أدنى فقط</label>
+    <button class="btn" @onclick="Load">تحديث</button>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr><th>الصنف</th><th>SKU</th><th>المخزن</th><th>الكمية</th><th>تكلفة الوحدة</th><th>القيمة</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in _rows)
+            {
+                <tr style="@(r.IsLow ? "background:#ffe5e5;" : "")">
+                    <td>@r.ProductName</td>
+                    <td>@r.Sku</td>
+                    <td>@r.WarehouseName</td>
+                    <td>@r.Quantity.ToString("N2")</td>
+                    <td>@r.AverageCost.ToString("N2")</td>
+                    <td>@r.StockValue.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private IReadOnlyList<StockReportRow> _rows = Array.Empty<StockReportRow>();
+    private bool _onlyLow;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load() => _rows = await Reports.GetStockReportAsync(null, _onlyLow);
+}

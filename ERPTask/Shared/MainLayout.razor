@@ -1,0 +1,44 @@
+@namespace ERPTask.Web.Shared
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">ERP — نقاط البيع</div>
+        <nav>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nav-item" href="/dashboard" Match="NavLinkMatch.Prefix">
+                        <i>📊</i> لوحة التحكم
+                    </NavLink>
+                    <NavLink class="nav-item" href="/pos">
+                        <i>🛒</i> نقطة البيع
+                    </NavLink>
+                    <NavLink class="nav-item" href="/sales">
+                        <i>🧾</i> الفواتير
+                    </NavLink>
+                    <NavLink class="nav-item" href="/products">
+                        <i>📦</i> الأصناف
+                    </NavLink>
+                    <NavLink class="nav-item" href="/stock">
+                        <i>🏪</i> الرصيد
+                    </NavLink>
+                    <NavLink class="nav-item" href="/transfers">
+                        <i>🔄</i> التحويلات
+                    </NavLink>
+                    <NavLink class="nav-item" href="/sales-report">
+                        <i>📈</i> تقرير المبيعات
+                    </NavLink>
+                    <hr />
+                    <div class="user-block">
+                        <div class="user-name">@context.User.Identity?.Name</div>
+                        <a class="logout" href="/logout">خروج</a>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+        </nav>
+    </aside>
+    <main class="main">
+        @Body
+    </main>
+</div>
