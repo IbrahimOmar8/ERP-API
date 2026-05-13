@@ -1,0 +1,53 @@
+@page "/sales-report"
+@namespace ERPTask.Web.Pages
+@attribute [Authorize(Roles = $"{Domain.Enums.Roles.Admin},{Domain.Enums.Roles.Manager},{Domain.Enums.Roles.Accountant}")]
+@inject IReportService Reports
+
+<h1>تقرير المبيعات</h1>
+
+<div class="toolbar">
+    <input type="date" @bind="_from" />
+    <input type="date" @bind="_to" />
+    <button class="btn" @onclick="Load">عرض</button>
+</div>
+
+@if (_report != null)
+{
+    <div class="kpis">
+        <Kpi Label="عدد الفواتير" Value="@_report.TotalInvoices.ToString()" Color="#1976d2" Icon="🧾" />
+        <Kpi Label="صافي المبيعات" Value="@_report.TotalNetSales.ToString("N2")" Color="#43a047" Icon="💵" />
+        <Kpi Label="الضريبة" Value="@_report.TotalVat.ToString("N2")" Color="#ffa000" Icon="📑" />
+        <Kpi Label="إجمالي المبيعات" Value="@_report.TotalGross.ToString("N2")" Color="#1976d2" Icon="📈" />
+        <Kpi Label="الربح" Value="@_report.TotalProfit.ToString("N2")" Color="#26a69a" Icon="💰" />
+    </div>
+    <div class="card" style="margin-top:12px;">
+        <table>
+            <thead>
+                <tr><th>التاريخ</th><th>عدد الفواتير</th><th>صافي</th><th>الضريبة</th><th>الإجمالي</th><th>الربح</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var r in _report.Rows)
+            {
+                <tr>
+                    <td>@r.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@r.InvoiceCount</td>
+                    <td>@r.NetSales.ToString("N2")</td>
+                    <td>@r.VatAmount.ToString("N2")</td>
+                    <td>@r.TotalSales.ToString("N2")</td>
+                    <td>@r.Profit.ToString("N2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private DateTime _from = DateTime.UtcNow.AddDays(-30);
+    private DateTime _to = DateTime.UtcNow;
+    private SalesReportDto? _report;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load() => _report = await Reports.GetSalesReportAsync(_from.ToUniversalTime(), _to.ToUniversalTime().AddDays(1), null);
+}

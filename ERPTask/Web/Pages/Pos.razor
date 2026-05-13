@@ -1,0 +1,224 @@
+@page "/pos"
+@namespace ERPTask.Web.Pages
+@attribute [Authorize(Roles = $"{Domain.Enums.Roles.Admin},{Domain.Enums.Roles.Manager},{Domain.Enums.Roles.Cashier}")]
+@inject Application.Inerfaces.Inventory.IProductService Products
+@inject Application.Inerfaces.POS.ICustomerService Customers
+@inject Application.Inerfaces.POS.ISaleService Sales
+@inject Application.Inerfaces.POS.ICashSessionService Sessions
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+
+<h1 style="display:flex; justify-content:space-between; align-items:center;">
+    <span>نقطة البيع</span>
+    @if (_session != null)
+    {
+        <span style="font-size:14px; color:#666;">جلسة: @_session.CashRegisterName · رصيد افتتاحي @_session.OpeningBalance.ToString("N2")</span>
+    }
+</h1>
+
+@if (_error != null)
+{
+    <div class="alert error">@_error</div>
+}
+
+@if (_session == null)
+{
+    <div class="card">
+        <p>لا توجد جلسة كاش مفتوحة. افتح جلسة من شاشة الجلسات أولاً.</p>
+    </div>
+}
+else
+{
+<div class="pos-layout">
+    <div class="pos-products">
+        <div class="toolbar">
+            <input @bind="_search" @bind:event="oninput" @onkeydown="OnSearchKeyDown" placeholder="ابحث بالاسم أو الباركود..." autofocus />
+            <button class="btn outline" @onclick="LoadProducts">تحديث</button>
+        </div>
+        <div class="product-grid">
+            @foreach (var p in _filtered)
+            {
+                <div class="product-tile" @onclick="@(() => AddProduct(p))">
+                    <div class="name">@p.NameAr</div>
+                    <div class="sku">@p.Sku</div>
+                    <div class="price">@p.SalePrice.ToString("N2")</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="pos-cart">
+        <div class="toolbar">
+            <select @bind="_customerId">
+                <option value="">عميل نقدي</option>
+                @foreach (var c in _customers)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            </select>
+        </div>
+        <div class="cart-items">
+            @if (_cart.Count == 0)
+            {
+                <div style="color:#999; text-align:center; padding:20px;">السلة فارغة — اضغط على صنف لإضافته</div>
+            }
+            else
+            {
+                @foreach (var line in _cart)
+                {
+                    <div class="cart-item">
+                        <div>
+                            <div style="font-weight:600;">@line.Product.NameAr</div>
+                            <div style="font-size:11px; color:#888;">@line.Product.SalePrice.ToString("N2") × @line.Quantity</div>
+                        </div>
+                        <input style="width:60px; text-align:center;" type="number" step="0.01" min="0.01" @bind="line.Quantity" @bind:event="oninput" />
+                        <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                            <span style="font-weight:700;">@LineTotal(line).ToString("N2")</span>
+                            <button class="btn danger" style="padding:2px 6px; font-size:11px;" @onclick="@(() => Remove(line))">حذف</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="cart-totals">
+            <div class="row"><span>المجموع</span><span>@SubTotal.ToString("N2")</span></div>
+            <div class="row">
+                <span>خصم</span>
+                <input style="width:90px;" type="number" step="0.01" min="0" @bind="_discount" @bind:event="oninput" />
+            </div>
+            <div class="row"><span>الضريبة</span><span>@Vat.ToString("N2")</span></div>
+            <div class="row grand"><span>الإجمالي</span><span>@Total.ToString("N2")</span></div>
+            <div class="row" style="margin-top:6px;">
+                <select @bind="_paymentMethod" style="width:120px;">
+                    <option value="1">نقدي</option>
+                    <option value="2">بطاقة</option>
+                    <option value="3">إنستا باي</option>
+                    <option value="4">محفظة</option>
+                </select>
+                <input style="width:120px;" type="number" step="0.01" min="0" placeholder="المدفوع" @bind="_paid" @bind:event="oninput" />
+            </div>
+            <button class="btn success" style="width:100%; margin-top:10px; padding:12px; font-size:16px;"
+                    disabled="@(_cart.Count == 0 || _saving)" @onclick="Submit">
+                @(_saving ? "جاري الحفظ..." : $"تسجيل البيع ({Total:N2})")
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    private List<ProductDto> _products = new();
+    private List<CustomerDto> _customers = new();
+    private CashSessionDto? _session;
+    private List<CartLine> _cart = new();
+    private string _search = "";
+    private string _customerId = "";
+    private decimal _discount;
+    private decimal _paid;
+    private int _paymentMethod = 1;
+    private string? _error;
+    private bool _saving;
+    private Guid _userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        var id = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(id, out _userId)) { Nav.NavigateTo("/login", true); return; }
+
+        _session = await Sessions.GetCurrentSessionAsync(_userId);
+        _customers = await Customers.GetAllAsync(null);
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        _products = await Products.GetAllAsync(new ProductFilterDto { PageNumber = 1, PageSize = 200 });
+    }
+
+    private IEnumerable<ProductDto> _filtered => string.IsNullOrWhiteSpace(_search)
+        ? _products
+        : _products.Where(p => p.NameAr.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                            || (p.Barcode ?? "").Contains(_search)
+                            || p.Sku.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private void AddProduct(ProductDto p)
+    {
+        var line = _cart.FirstOrDefault(l => l.Product.Id == p.Id);
+        if (line != null) line.Quantity++;
+        else _cart.Add(new CartLine { Product = p, Quantity = 1 });
+    }
+
+    private void Remove(CartLine line) => _cart.Remove(line);
+
+    private decimal LineTotal(CartLine l)
+    {
+        var net = l.Product.SalePrice * l.Quantity;
+        var vat = net * (l.Product.VatRate / 100m);
+        return net + vat;
+    }
+
+    private decimal SubTotal => _cart.Sum(l => l.Product.SalePrice * l.Quantity);
+    private decimal Vat => _cart.Sum(l => l.Product.SalePrice * l.Quantity * (l.Product.VatRate / 100m));
+    private decimal Total => Math.Max(0, SubTotal + Vat - _discount);
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_search))
+        {
+            var product = await Products.GetByBarcodeAsync(_search);
+            if (product != null)
+            {
+                AddProduct(product);
+                _search = "";
+            }
+        }
+    }
+
+    private async Task Submit()
+    {
+        if (_session == null) return;
+        _error = null;
+        _saving = true;
+        try
+        {
+            var dto = new CreateSaleDto
+            {
+                WarehouseId = _session.WarehouseId,
+                CashSessionId = _session.Id,
+                CustomerId = string.IsNullOrEmpty(_customerId) ? null : Guid.Parse(_customerId),
+                DiscountAmount = _discount,
+                Items = _cart.Select(l => new CreateSaleItemDto
+                {
+                    ProductId = l.Product.Id,
+                    Quantity = l.Quantity,
+                    UnitPrice = l.Product.SalePrice
+                }).ToList(),
+                Payments = new List<CreateSalePaymentDto>
+                {
+                    new() { Method = (Domain.Enums.PaymentMethod)_paymentMethod, Amount = _paid > 0 ? _paid : Total }
+                }
+            };
+            var sale = await Sales.CreateAsync(dto, _userId);
+            _cart.Clear();
+            _discount = 0;
+            _paid = 0;
+            _customerId = "";
+            Nav.NavigateTo($"/sales/{sale.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private class CartLine
+    {
+        public ProductDto Product { get; set; } = null!;
+        public decimal Quantity { get; set; }
+    }
+}
