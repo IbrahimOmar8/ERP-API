@@ -38,6 +38,7 @@ public static class ConfigureServices
         services.AddScoped<IStockService, StockService>();
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<IPurchaseInvoiceService, PurchaseInvoiceService>();
+        services.AddScoped<IStockTransferService, StockTransferService>();
 
         // POS
         services.AddScoped<ICustomerService, CustomerService>();
