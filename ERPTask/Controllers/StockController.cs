@@ -1,11 +1,13 @@
 using Application.DTOs.Inventory;
 using Application.Inerfaces.Inventory;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class StockController : ControllerBase
     {
         private readonly IStockService _service;

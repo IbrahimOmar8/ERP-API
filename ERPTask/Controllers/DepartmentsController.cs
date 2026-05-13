@@ -1,11 +1,14 @@
 using Application.DTOs;
 using Application.Inerfaces;
+using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager}")]
     public class DepartmentsController : ControllerBase
     {
         private readonly IDepartmentService _service;

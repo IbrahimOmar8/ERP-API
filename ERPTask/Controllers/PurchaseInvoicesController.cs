@@ -1,11 +1,14 @@
 using Application.DTOs.Inventory;
 using Application.Inerfaces.Inventory;
+using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.WarehouseKeeper},{Roles.Accountant}")]
     public class PurchaseInvoicesController : ControllerBase
     {
         private readonly IPurchaseInvoiceService _service;

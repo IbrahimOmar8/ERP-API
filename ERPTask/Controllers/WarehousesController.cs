@@ -1,11 +1,13 @@
 using Application.DTOs.Inventory;
 using Application.Inerfaces.Inventory;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class WarehousesController : ControllerBase
     {
         private readonly IWarehouseService _service;

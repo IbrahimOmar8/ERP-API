@@ -1,11 +1,14 @@
 using Application.DTOs.POS;
 using Application.Inerfaces.POS;
+using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPTask.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Cashier}")]
     public class CashRegistersController : ControllerBase
     {
         private readonly ICashRegisterService _service;

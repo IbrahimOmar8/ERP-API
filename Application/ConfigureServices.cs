@@ -1,9 +1,11 @@
 using System.Reflection;
 using Application.Inerfaces;
+using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.POS;
 using Application.Services;
+using Application.Services.Auth;
 using Application.Services.Egypt;
 using Application.Services.Inventory;
 using Application.Services.POS;
@@ -39,6 +41,11 @@ public static class ConfigureServices
 
         // Egypt
         services.AddScoped<IEInvoiceService, EInvoiceService>();
+
+        // Auth
+        services.AddSingleton<ITokenService, TokenService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }
