@@ -58,11 +58,15 @@ namespace ERPTask.Controllers
                 ? Ok(s) : NotFound();
 
         [HttpPost("{id}/submit-eta")]
-        public async Task<IActionResult> SubmitEta(Guid id)
+        public async Task<IActionResult> SubmitEta(Guid id, CancellationToken ct)
         {
-            try { return Ok(await _eInvoiceService.SubmitSaleAsync(id)); }
+            try { return Ok(await _eInvoiceService.SubmitSaleAsync(id, null, ct)); }
             catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
         }
+
+        [HttpGet("{id}/eta-status")]
+        public async Task<IActionResult> GetEtaStatus(Guid id)
+            => (await _eInvoiceService.GetSubmissionAsync(id)) is { } s ? Ok(s) : NotFound();
 
         public record RefundRequest(string? Reason);
     }

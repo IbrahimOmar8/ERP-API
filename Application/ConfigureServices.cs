@@ -10,15 +10,19 @@ using Application.Services.Egypt;
 using Application.Services.Inventory;
 using Application.Services.POS;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration? configuration = null)
     {
         services.AddAutoMapper(Assembly.GetExecutingAssembly());
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
+        if (configuration != null)
+            services.Configure<EtaSettings>(configuration.GetSection("EtaInvoicing"));
 
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
@@ -39,8 +43,13 @@ public static class ConfigureServices
         services.AddScoped<ICashSessionService, CashSessionService>();
         services.AddScoped<ISaleService, SaleService>();
 
-        // Egypt
-        services.AddScoped<IEInvoiceService, EInvoiceService>();
+        // Egypt - ETA e-invoicing
+        services.AddHttpClient<IEtaTokenService, EtaTokenService>();
+        services.AddHttpClient<IEInvoiceService, EInvoiceService>((sp, client) =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EtaSettings>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(10, opts.RequestTimeoutSeconds));
+        });
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

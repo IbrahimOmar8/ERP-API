@@ -22,4 +22,5 @@ class ApiConfig {
   static const String cashRegisters = '/CashRegisters';
   static const String cashSessions = '/CashSessions';
   static const String sales = '/Sales';
+  static const String eInvoice = '/einvoice';
 }
