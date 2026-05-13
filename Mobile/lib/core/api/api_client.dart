@@ -54,6 +54,14 @@ class ApiClient {
     return _handle(res);
   }
 
+  Future<List<int>> getBytes(String path) async {
+    final res = await http.get(_uri(path), headers: {
+      if (_token != null) 'Authorization': 'Bearer $_token',
+    });
+    if (res.statusCode >= 200 && res.statusCode < 300) return res.bodyBytes;
+    throw ApiException('فشل تحميل البيانات', res.statusCode);
+  }
+
   dynamic _handle(http.Response res) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;

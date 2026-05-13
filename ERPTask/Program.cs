@@ -14,6 +14,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         ?? "Data Source=erp.db"));
 
 builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddScoped<ERPTask.Services.InvoicePrintService>();
 
 // JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"]
