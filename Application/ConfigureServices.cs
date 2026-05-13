@@ -4,11 +4,13 @@ using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.POS;
+using Application.Inerfaces.Reports;
 using Application.Services;
 using Application.Services.Auth;
 using Application.Services.Egypt;
 using Application.Services.Inventory;
 using Application.Services.POS;
+using Application.Services.Reports;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 
@@ -50,6 +52,9 @@ public static class ConfigureServices
             var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EtaSettings>>().Value;
             client.Timeout = TimeSpan.FromSeconds(Math.Max(10, opts.RequestTimeoutSeconds));
         });
+
+        // Reports
+        services.AddScoped<IReportService, ReportService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();
