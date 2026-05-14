@@ -4,9 +4,9 @@ import RequireAuth from "@/components/RequireAuth";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
-      <div className="flex h-screen overflow-hidden flex-row-reverse">
+      <div className="flex flex-col lg:flex-row-reverse h-screen overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-6">{children}</main>
       </div>
     </RequireAuth>
   );
