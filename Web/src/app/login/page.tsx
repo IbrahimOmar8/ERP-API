@@ -21,12 +21,7 @@ export default function LoginPage() {
       useAuth.getState().setSession({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
-        user: {
-          userId: data.userId,
-          userName: data.userName,
-          fullName: data.fullName,
-          roles: data.roles ?? [],
-        },
+        user: data.user,
       });
       router.replace("/dashboard");
     } catch (err) {

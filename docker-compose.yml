@@ -1,0 +1,40 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ERPTask/Dockerfile
+    image: erp-api
+    container_name: erp-api
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Data Source=/data/erp.db
+      - Jwt__Key=${JWT_KEY:-CHANGE_ME_TO_A_VERY_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS_LONG_PLEASE}
+      - Jwt__Issuer=ErpApi
+      - Jwt__Audience=ErpClients
+      - DefaultAdminPassword=${ADMIN_PASSWORD:-Admin@1234}
+      - Cors__AllowedOrigins__0=http://localhost:3000
+      - Cors__AllowedOrigins__1=${WEB_PUBLIC_URL:-http://localhost:3000}
+    volumes:
+      - api-data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./Web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:-http://localhost:5000/api}
+    image: erp-web
+    container_name: erp-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_PUBLIC_URL:-http://localhost:5000/api}
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api-data:
