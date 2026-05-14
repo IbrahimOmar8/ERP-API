@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Trash2, Truck } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { downloadCsv } from "@/lib/csv";
 import type { Supplier } from "@/types/api";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonRow } from "@/components/Skeleton";
 import { useConfirm } from "@/components/ConfirmDialog";
 
 interface Form {
@@ -85,6 +88,19 @@ export default function SuppliersPage() {
   return (
     <>
       <PageHeader title="الموردون">
+        <button
+          onClick={() => data && downloadCsv("suppliers", data, [
+            { header: "الاسم", accessor: (s) => s.name },
+            { header: "الهاتف", accessor: (s) => s.phone ?? "" },
+            { header: "البريد", accessor: (s) => s.email ?? "" },
+            { header: "الرقم الضريبي", accessor: (s) => s.taxRegistrationNumber ?? "" },
+            { header: "الرصيد", accessor: (s) => s.balance.toFixed(2) },
+          ])}
+          disabled={!data || data.length === 0}
+          className="btn-outline"
+        >
+          <Download size={16} /> تصدير CSV
+        </button>
         <button onClick={() => { setForm(emptyForm); setOpen(true); }} className="btn">
           <Plus size={16} /> مورد جديد
         </button>
@@ -95,7 +111,21 @@ export default function SuppliersPage() {
             <tr><th>الاسم</th><th>الهاتف</th><th>الرقم الضريبي</th><th>الرصيد</th><th></th></tr>
           </thead>
           <tbody>
-            {isLoading ? <tr><td colSpan={5} className="text-center py-6">جاري التحميل...</td></tr> :
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={5} />)
+            ) : data?.length === 0 ? (
+              <tr>
+                <td colSpan={5}>
+                  <EmptyState
+                    icon={Truck}
+                    title="لا يوجد موردون"
+                    description="أضف الموردين لتسجيل فواتير الشراء."
+                    actionLabel="إضافة مورد"
+                    onAction={() => { setForm(emptyForm); setOpen(true); }}
+                  />
+                </td>
+              </tr>
+            ) : (
               data?.map((s) => (
                 <tr key={s.id}>
                   <td className="font-medium">{s.name}</td>
@@ -111,7 +141,8 @@ export default function SuppliersPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

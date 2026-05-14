@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Pencil, Plus, X } from "lucide-react";
+import { Download, Pencil, Plus, Users as UsersIcon, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { downloadCsv } from "@/lib/csv";
 import type { Customer } from "@/types/api";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonRow } from "@/components/Skeleton";
 
 interface FormState {
   id?: string;
@@ -77,6 +80,20 @@ export default function CustomersPage() {
   return (
     <>
       <PageHeader title="العملاء">
+        <button
+          onClick={() => data && downloadCsv("customers", data, [
+            { header: "الاسم", accessor: (c) => c.name },
+            { header: "الهاتف", accessor: (c) => c.phone ?? "" },
+            { header: "البريد", accessor: (c) => c.email ?? "" },
+            { header: "الرقم الضريبي", accessor: (c) => c.taxRegistrationNumber ?? "" },
+            { header: "النوع", accessor: (c) => (c.isCompany ? "شركة" : "فرد") },
+            { header: "الرصيد", accessor: (c) => c.balance.toFixed(2) },
+          ])}
+          disabled={!data || data.length === 0}
+          className="btn-outline"
+        >
+          <Download size={16} /> تصدير CSV
+        </button>
         <button onClick={() => { setForm(emptyForm); setShowForm(true); }} className="btn">
           <Plus size={16} /> عميل جديد
         </button>
@@ -164,7 +181,19 @@ export default function CustomersPage() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} className="text-center py-6">جاري التحميل...</td></tr>
+              Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} cols={6} />)
+            ) : data?.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={UsersIcon}
+                    title="لا يوجد عملاء"
+                    description="أضف أول عميل لتسجيل فواتيره."
+                    actionLabel="إضافة عميل"
+                    onAction={() => { setForm(emptyForm); setShowForm(true); }}
+                  />
+                </td>
+              </tr>
             ) : (
               data?.map((c) => (
                 <tr key={c.id}>

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Pencil, Plus, Power, Trash2 } from "lucide-react";
+import { Pencil, Plus, Power, Terminal, Trash2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import type { CashRegister, Warehouse } from "@/types/api";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonRow } from "@/components/Skeleton";
 import { useConfirm } from "@/components/ConfirmDialog";
 
 interface Form {
@@ -94,7 +96,21 @@ export default function CashRegistersPage() {
             <tr><th>الاسم</th><th>الكود</th><th>المخزن</th><th>الحالة</th><th>جلسة مفتوحة</th><th></th></tr>
           </thead>
           <tbody>
-            {list.isLoading ? <tr><td colSpan={6} className="text-center py-6">جاري التحميل...</td></tr> :
+            {list.isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={6} />)
+            ) : list.data?.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={Terminal}
+                    title="لا توجد ماكينات كاشير"
+                    description="أضف ماكينة لربطها بمخزن وافتح جلسات للكاشير."
+                    actionLabel="إضافة ماكينة"
+                    onAction={() => { setForm(emptyForm); setOpen(true); }}
+                  />
+                </td>
+              </tr>
+            ) : (
               list.data?.map((r) => (
                 <tr key={r.id} className={!r.isActive ? "opacity-50" : ""}>
                   <td className="font-medium">{r.name}</td>
@@ -112,7 +128,8 @@ export default function CashRegistersPage() {
                     <button onClick={() => remove(r)} className="btn-danger !px-2 !py-1 text-xs"><Trash2 size={14} /></button>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

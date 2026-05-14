@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/cart_provider.dart';
 import 'core/providers/session_provider.dart';
+import 'core/providers/theme_provider.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/home/screens/home_screen.dart';
 
@@ -20,40 +21,46 @@ void main() async {
 
   final auth = AuthProvider();
   await auth.tryRestoreSession();
+  final themeProvider = ThemeProvider();
+  await themeProvider.load();
 
-  runApp(ErpApp(auth: auth));
+  runApp(ErpApp(auth: auth, themeProvider: themeProvider));
 }
 
 class ErpApp extends StatelessWidget {
   final AuthProvider auth;
-  const ErpApp({super.key, required this.auth});
+  final ThemeProvider themeProvider;
+  const ErpApp({super.key, required this.auth, required this.themeProvider});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => SessionProvider()),
       ],
-      child: MaterialApp(
-        title: 'ERP المخازن ونقاط البيع',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.light,
-        locale: const Locale('ar', 'EG'),
-        supportedLocales: const [Locale('ar', 'EG'), Locale('en', 'US')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
+      child: Consumer<ThemeProvider>(
+        builder: (context, theme, _) => MaterialApp(
+          title: 'ERP المخازن ونقاط البيع',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: theme.mode,
+          locale: const Locale('ar', 'EG'),
+          supportedLocales: const [Locale('ar', 'EG'), Locale('en', 'US')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child!,
+          ),
+          home: const RootScreen(),
         ),
-        home: const RootScreen(),
       ),
     );
   }
