@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import ThemeToggle from "./ThemeToggle";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -108,13 +109,16 @@ export default function Sidebar() {
       <div className="border-t border-slate-700 p-3">
         <div className="text-sm font-medium truncate">{user?.fullName ?? user?.userName}</div>
         <div className="text-xs text-slate-400 mb-2 truncate">{user?.roles?.join(" · ")}</div>
-        <button
-          onClick={logout}
-          className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300"
-        >
-          <LogOut size={16} />
-          <span>خروج</span>
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300"
+          >
+            <LogOut size={16} />
+            <span>خروج</span>
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
     </>
   );

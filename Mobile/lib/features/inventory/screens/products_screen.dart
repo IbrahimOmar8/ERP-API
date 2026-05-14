@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/money.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/loading_shimmer.dart';
 import '../models/product.dart';
 import '../services/inventory_service.dart';
 
@@ -20,6 +22,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -55,46 +63,100 @@ class _ProductsScreenState extends State<ProductsScreen> {
               decoration: InputDecoration(
                 hintText: 'ابحث باسم الصنف أو الباركود',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                    icon: const Icon(Icons.send), onPressed: _load),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          _searchController.clear();
+                          _load();
+                        },
+                      ),
               ),
+              onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _load(),
             ),
           ),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingShimmerList(itemHeight: 78)
                 : _error != null
-                    ? Center(child: Text(_error!))
-                    : ListView.separated(
-                        itemCount: _products.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, i) {
-                          final p = _products[i];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer,
-                              child: Text(p.nameAr.isNotEmpty ? p.nameAr[0] : '?'),
+                    ? EmptyState(
+                        icon: Icons.cloud_off,
+                        message: 'تعذر التحميل: $_error',
+                        actionLabel: 'إعادة المحاولة',
+                        onAction: _load,
+                      )
+                    : _products.isEmpty
+                        ? const EmptyState(
+                            icon: Icons.inventory_2_outlined,
+                            message: 'لا توجد أصناف',
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _load,
+                            child: ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                              itemCount: _products.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 6),
+                              itemBuilder: (context, i) {
+                                final p = _products[i];
+                                final lowStock =
+                                    p.currentStock <= 0 ||
+                                        (p.currentStock < 5 && p.trackStock);
+                                return Card(
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.12),
+                                      child: Icon(Icons.inventory_2,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary),
+                                    ),
+                                    title: Text(p.nameAr,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600)),
+                                    subtitle: Row(
+                                      children: [
+                                        Text('SKU: ${p.sku}',
+                                            style: const TextStyle(fontSize: 11)),
+                                        const Text(' · ',
+                                            style: TextStyle(fontSize: 11)),
+                                        Icon(
+                                          lowStock ? Icons.warning_amber : Icons.check,
+                                          size: 12,
+                                          color: lowStock ? Colors.orange : Colors.green,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text('متاح: ${p.currentStock}',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: lowStock
+                                                    ? Colors.orange
+                                                    : Colors.green)),
+                                      ],
+                                    ),
+                                    trailing: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(Money.format(p.salePrice),
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14)),
+                                        Text('${p.vatRate.toStringAsFixed(1)}% ضريبة',
+                                            style: const TextStyle(
+                                                fontSize: 10, color: Colors.grey)),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                            title: Text(p.nameAr),
-                            subtitle: Text('SKU: ${p.sku} • الرصيد: ${p.currentStock}'),
-                            trailing: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(Money.format(p.salePrice),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                Text('+${p.vatRate}% VAT',
-                                    style: const TextStyle(
-                                        fontSize: 11, color: Colors.grey)),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                          ),
           ),
         ],
       ),
