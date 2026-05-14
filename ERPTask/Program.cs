@@ -1,6 +1,5 @@
 using System.Text;
 using Infrastructure.Data;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,20 +16,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddScoped<ERPTask.Services.InvoicePrintService>();
 
-// JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key not configured");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 builder.Services
-    .AddAuthentication(options =>
-    {
-        // JWT for /api/*, cookie for the Blazor web app
-        options.DefaultScheme = "MultiScheme";
-        options.DefaultChallengeScheme = "MultiScheme";
-    })
-    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -43,30 +36,9 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.FromMinutes(1)
         };
-    })
-    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-    {
-        options.LoginPath = "/login";
-        options.LogoutPath = "/logout";
-        options.AccessDeniedPath = "/login";
-        options.ExpireTimeSpan = TimeSpan.FromHours(12);
-        options.SlidingExpiration = true;
-    })
-    .AddPolicyScheme("MultiScheme", "JWT or Cookie", options =>
-    {
-        options.ForwardDefaultSelector = ctx =>
-        {
-            var auth = ctx.Request.Headers.Authorization.ToString();
-            return auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-                ? JwtBearerDefaults.AuthenticationScheme
-                : CookieAuthenticationDefaults.AuthenticationScheme;
-        };
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
-builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -98,9 +70,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
-    .AllowAnyOrigin()
+    .WithOrigins(
+        builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? new[] { "http://localhost:3000", "http://127.0.0.1:3000" })
     .AllowAnyHeader()
-    .AllowAnyMethod()));
+    .AllowAnyMethod()
+    .AllowCredentials()));
 
 var app = builder.Build();
 
@@ -111,14 +86,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-app.UseStaticFiles();
-app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapRazorPages();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 
 using (var scope = app.Services.CreateScope())
 {

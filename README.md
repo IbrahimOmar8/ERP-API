@@ -8,7 +8,7 @@
 - **Domain** - النماذج والكيانات والـ Enums
 - **Application** - DTOs والخدمات وواجهات الأعمال
 - **Infrastructure** - EF Core (SQLite)، DbContext، Migrations
-- **ERPTask** - مشروع API (Controllers + Swagger) **+ تطبيق Blazor Server للويب**
+- **ERPTask** - مشروع API (Controllers + Swagger + JWT)
 
 ### 2. Mobile (Flutter)
 تطبيق موبايل في مجلد `Mobile/` يدعم:
@@ -20,10 +20,12 @@
 - ضريبة القيمة المضافة المصرية (14%)
 - تكامل الفاتورة الإلكترونية ETA (إرسال / تحديث / إلغاء)
 
-### 3. Web (Blazor Server)
-- مدمج داخل مشروع `ERPTask` نفسه (نفس الـ API).
-- صفحات: تسجيل الدخول، لوحة التحكم، نقطة البيع، الفواتير، تفاصيل الفاتورة، الأصناف، الرصيد، تحويلات المخازن، تقرير المبيعات.
-- مصادقة بـ Cookie منفصلة عن الـ JWT بطريقة `ForwardDefaultSelector` (Bearer → JWT، غير ذلك → Cookie).
+### 3. Web (Next.js 14 + React + TypeScript)
+تطبيق ويب SPA في مجلد `Web/` — يستهلك نفس الـ API عبر JWT:
+- Next.js 14 App Router + Tailwind CSS + TanStack Query + Zustand
+- صفحات: تسجيل الدخول، لوحة تحكم، POS، جلسات الكاش، الفواتير، تفاصيل الفاتورة + ETA، العملاء، الأصناف، الرصيد، التحويلات، تقرير المبيعات، الإعدادات
+- مصادقة JWT مع تجديد تلقائي للتوكن
+- يشتغل على `http://localhost:3000` ويتصل بالـ API على `http://localhost:5000/api`
 
 ## الوحدات الوظيفية
 
@@ -69,7 +71,7 @@
 
 ## التشغيل
 
-### Backend + Web (مدمج)
+### Backend (API)
 ```bash
 cd ERPTask
 dotnet restore
@@ -81,12 +83,19 @@ dotnet run
 - **كلمة المرور:** `Admin@1234`  
   (غيّرها فوراً عبر `POST /api/Auth/change-password`)
 
+### Web (Next.js)
+```bash
+cd Web
+cp .env.local.example .env.local
+npm install
+npm run dev
+```
+
 ثم افتح:
 | الواجهة | الرابط |
 |---|---|
 | Swagger API | `http://localhost:5000/swagger` |
-| تطبيق الويب (Blazor) | `http://localhost:5000/` |
-| تسجيل الدخول للويب | `http://localhost:5000/login` |
+| تطبيق الويب | `http://localhost:3000/` |
 
 > ⚠️ **قبل الإنتاج**: عدّل `appsettings.json` ✦ `Jwt:Key` لمفتاح عشوائي طويل (32+ حرف) و `DefaultAdminPassword`.
 
@@ -123,12 +132,9 @@ flutter run
 
 ## المصادقة (Auth)
 
-| المسار | الطريقة |
-|---|---|
-| `/api/*` | JWT Bearer (يتم تجديده بـ `/api/Auth/refresh`) |
-| `/login`, `/dashboard`, `/pos`, ... (الويب) | Cookie auth — `/login-cookie` يُسجّل الدخول وينشئ الكوكي |
+كل الـ API يحمي بـ JWT Bearer. الويب يحفظ التوكن في localStorage ويضيفه تلقائياً للهيدر `Authorization`. عند انتهاء الصلاحية، يحاول تجديده بـ `POST /api/Auth/refresh` ثم يعيد المحاولة. لو فشل، يحوّل لصفحة الدخول.
 
-`ForwardDefaultSelector` يفحص هيدر `Authorization`: إن بدأ بـ `Bearer ` يستخدم JWT، وإلا يستخدم Cookie.
+CORS مضبوط للسماح فقط للنطاقات المحددة في `Cors:AllowedOrigins` (افتراضياً `http://localhost:3000`). أضف نطاق الإنتاج هناك.
 
 ## الأدوار
 - `Admin` - كل الصلاحيات
@@ -140,7 +146,7 @@ flutter run
 ## التقنيات
 
 - 🔧 .NET 8 Web API + EF Core 8 + SQLite
-- 🌐 Blazor Server (Razor Pages + SignalR)
+- 🌐 Next.js 14 + React 18 + TypeScript + Tailwind CSS + TanStack Query + Zustand
 - 📱 Flutter 3.19+ مع `pdf` + `printing` + `flutter_barcode_scanner`
 - 📊 AutoMapper, MediatR
 - 🧪 Swagger UI
@@ -165,13 +171,11 @@ flutter run
 │   │   └── Inventory/   # ... + StockTransferService
 │   └── Inerfaces/
 ├── Infrastructure/      # EF Core + الـ DbContext
-├── ERPTask/             # Web API + Blazor Server
-│   ├── Controllers/     # ETA, Reports, StockTransfers, InvoicePrint, ...
-│   ├── Services/        # InvoicePrintService (HTML A4 + 80mm + QR)
-│   ├── Pages/           # _Host.cshtml + Login.cshtml
-│   ├── Web/Pages/       # صفحات Blazor (Pos, Dashboard, ...)
-│   ├── Shared/          # MainLayout, RedirectToLogin
-│   └── wwwroot/css/     # site.css
+├── ERPTask/             # Web API فقط
+│   ├── Controllers/     # ETA, Reports, StockTransfers, InvoicePrint, CompanyProfile, ...
+│   └── Services/        # InvoicePrintService (HTML A4 + 80mm + QR)
+├── Web/                 # تطبيق Next.js (راجع Web/README.md)
+│   └── src/app/         # App Router pages: login, dashboard, pos, sales, ...
 └── Mobile/              # تطبيق Flutter
     └── lib/features/
         ├── auth/        # تسجيل الدخول وإدارة JWT
@@ -181,6 +185,6 @@ flutter run
 ```
 
 ## ملاحظات مهمة قبل النشر
-- لم يتم تنفيذ `dotnet build` في بيئة المطور الأصلية لعدم توفر SDK محلياً؛ شغّل `dotnet restore && dotnet build` على جهازك للتأكد من نجاح الكومبايل قبل أول تشغيل.
+- لم يتم تنفيذ `dotnet build` أو `npm run build` في بيئة المطور الأصلية لعدم توفر SDK/Node محلياً؛ شغّل `dotnet restore && dotnet build` و `npm install && npm run build` على جهازك للتأكد من نجاح الكومبايل قبل أول تشغيل.
 - لتجربة الـ ETA في بيئة الإنتاج راجع وثائق ETA لاستبدال preprod URLs بـ production URLs.
-- الويب يستخدم SignalR (Blazor Server) — تأكد من إعدادات الـ WebSocket / Reverse Proxy إن كنت خلف Nginx أو IIS.
+- لو الـ API والويب على نطاقات مختلفة، حدّث `Cors:AllowedOrigins` في `appsettings.json` و `NEXT_PUBLIC_API_URL` في `Web/.env.local`.
