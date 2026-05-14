@@ -53,6 +53,7 @@ public static class ConfigureServices
             var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EtaSettings>>().Value;
             client.Timeout = TimeSpan.FromSeconds(Math.Max(10, opts.RequestTimeoutSeconds));
         });
+        services.AddScoped<ICompanyProfileService, CompanyProfileService>();
 
         // Reports
         services.AddScoped<IReportService, ReportService>();

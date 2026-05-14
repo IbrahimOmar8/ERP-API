@@ -1,0 +1,139 @@
+@page "/customers"
+@namespace ERPTask.Web.Pages
+@attribute [Authorize]
+@inject Application.Inerfaces.POS.ICustomerService Service
+
+<h1>العملاء</h1>
+
+@if (_error != null)
+{
+    <div class="alert error">@_error</div>
+}
+
+<div class="card">
+    <h3>@(_editing == null ? "إضافة عميل" : "تعديل عميل")</h3>
+    <div class="row">
+        <div>
+            <label>الاسم *</label>
+            <input @bind="_form.Name" />
+        </div>
+        <div>
+            <label>الهاتف</label>
+            <input @bind="_form.Phone" />
+        </div>
+        <div>
+            <label>البريد</label>
+            <input @bind="_form.Email" />
+        </div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+        <div>
+            <label>الرقم الضريبي (شركات)</label>
+            <input @bind="_form.TaxRegistrationNumber" />
+        </div>
+        <div>
+            <label>الرقم القومي (أفراد)</label>
+            <input @bind="_form.NationalId" />
+        </div>
+        <div>
+            <label>حد الائتمان</label>
+            <input type="number" step="0.01" min="0" @bind="_form.CreditLimit" />
+        </div>
+    </div>
+    <div style="margin-top:8px;">
+        <label>العنوان</label>
+        <input @bind="_form.Address" />
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+        <input type="checkbox" @bind="_form.IsCompany" style="width:auto;" />
+        <span>شركة (B2B)</span>
+    </label>
+    <div style="margin-top:10px; display:flex; gap:8px;">
+        <button class="btn success" @onclick="Save" disabled="@_busy">@(_editing == null ? "إضافة" : "حفظ التعديل")</button>
+        @if (_editing != null)
+        {
+            <button class="btn outline" @onclick="ClearForm">إلغاء</button>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        <input @bind="_search" @bind:event="oninput" placeholder="ابحث..." />
+        <button class="btn outline" @onclick="Load">بحث</button>
+    </div>
+    <table>
+        <thead>
+            <tr><th>الاسم</th><th>الهاتف</th><th>الرقم الضريبي</th><th>النوع</th><th>الرصيد</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var c in _items)
+            {
+                <tr>
+                    <td>@c.Name</td>
+                    <td>@c.Phone</td>
+                    <td>@c.TaxRegistrationNumber</td>
+                    <td>@(c.IsCompany ? "شركة" : "فرد")</td>
+                    <td>@c.Balance.ToString("N2")</td>
+                    <td>
+                        <button class="btn outline" @onclick="@(() => Edit(c))">تعديل</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<CustomerDto> _items = new();
+    private CreateCustomerDto _form = new();
+    private CustomerDto? _editing;
+    private string _search = "";
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        _items = await Service.GetAllAsync(string.IsNullOrWhiteSpace(_search) ? null : _search);
+    }
+
+    private void Edit(CustomerDto c)
+    {
+        _editing = c;
+        _form = new CreateCustomerDto
+        {
+            Name = c.Name,
+            Phone = c.Phone,
+            Email = c.Email,
+            Address = c.Address,
+            TaxRegistrationNumber = c.TaxRegistrationNumber,
+            NationalId = c.NationalId,
+            IsCompany = c.IsCompany,
+            CreditLimit = c.CreditLimit
+        };
+    }
+
+    private void ClearForm()
+    {
+        _editing = null;
+        _form = new CreateCustomerDto();
+    }
+
+    private async Task Save()
+    {
+        _error = null; _busy = true;
+        try
+        {
+            if (_editing == null)
+                await Service.CreateAsync(_form);
+            else
+                await Service.UpdateAsync(_editing.Id, _form);
+            ClearForm();
+            await Load();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+}
