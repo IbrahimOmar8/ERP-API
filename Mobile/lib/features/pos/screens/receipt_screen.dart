@@ -3,6 +3,7 @@ import '../../../core/utils/money.dart';
 import '../models/einvoice_submission.dart';
 import '../models/sale.dart';
 import '../services/eta_service.dart';
+import '../services/pos_service.dart';
 import '../services/receipt_pdf_service.dart';
 
 class ReceiptScreen extends StatefulWidget {
@@ -60,12 +61,33 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     );
   }
 
-  Future<String?> _askReason() async {
+  Future<void> _confirmRefund() async {
+    final reason = await _askReason(title: 'سبب المرتجع');
+    if (reason == null || reason.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      final updated = await PosService.refund(_sale!.id, reason);
+      if (mounted && updated != null) {
+        setState(() => _sale = updated);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تسجيل المرتجع وإعادة الأصناف للمخزون')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<String?> _askReason({String title = 'سبب الإلغاء'}) async {
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('سبب الإلغاء'),
+        title: Text(title),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -98,6 +120,12 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               icon: const Icon(Icons.share),
               tooltip: 'مشاركة PDF',
               onPressed: () => ReceiptPdfService.share(sale)),
+          if (sale.status == 1)
+            IconButton(
+              icon: const Icon(Icons.undo, color: Colors.red),
+              tooltip: 'مرتجع',
+              onPressed: _confirmRefund,
+            ),
           IconButton(
               icon: const Icon(Icons.home),
               onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst)),

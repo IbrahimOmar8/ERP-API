@@ -19,6 +19,7 @@ class ApiConfig {
   static const String suppliers = '/Suppliers';
   static const String purchaseInvoices = '/PurchaseInvoices';
   static const String reports = '/reports';
+  static const String companyProfile = '/company-profile';
 
   static const String customers = '/Customers';
   static const String cashRegisters = '/CashRegisters';
