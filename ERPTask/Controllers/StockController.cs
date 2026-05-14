@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Application.DTOs.Inventory;
 using Application.Inerfaces.Inventory;
+using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +14,10 @@ namespace ERPTask.Controllers
     {
         private readonly IStockService _service;
         public StockController(IStockService service) => _service = service;
+
+        private Guid? CurrentUserId =>
+            Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value, out var id) ? id : null;
 
         [HttpGet("warehouse/{warehouseId}")]
         public async Task<IActionResult> ByWarehouse(Guid warehouseId)
@@ -33,9 +39,10 @@ namespace ERPTask.Controllers
             => Ok(await _service.GetMovementsAsync(productId, warehouseId));
 
         [HttpPost("adjust")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.WarehouseKeeper}")]
         public async Task<IActionResult> Adjust(StockAdjustmentDto dto)
         {
-            await _service.AdjustStockAsync(dto, null);
+            await _service.AdjustStockAsync(dto, CurrentUserId);
             return Ok();
         }
     }

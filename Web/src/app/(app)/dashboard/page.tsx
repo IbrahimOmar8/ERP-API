@@ -16,6 +16,7 @@ import { formatMoney } from "@/lib/format";
 import type { DashboardKpi, TopProduct } from "@/types/api";
 import PageHeader from "@/components/PageHeader";
 import KpiCard from "@/components/KpiCard";
+import SalesTrendChart from "@/components/SalesTrendChart";
 
 export default function DashboardPage() {
   const kpi = useQuery({
@@ -58,6 +59,11 @@ export default function DashboardPage() {
           </div>
         </>
       ) : null}
+
+      <div className="card mb-4">
+        <h3 className="font-semibold mb-3">اتجاه المبيعات (آخر 30 يوم)</h3>
+        <SalesTrendChart />
+      </div>
 
       <div className="card">
         <h3 className="font-semibold mb-3">الأعلى مبيعاً (آخر 30 يوم)</h3>

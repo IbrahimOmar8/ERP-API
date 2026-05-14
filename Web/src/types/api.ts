@@ -327,3 +327,44 @@ export interface ApiUser {
   isActive: boolean;
   roles: string[];
 }
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName?: string | null;
+  warehouseId: string;
+  warehouseName?: string | null;
+  type: number;
+  quantity: number;
+  unitCost: number;
+  balanceAfter: number;
+  documentNumber?: string | null;
+  notes?: string | null;
+  movementDate: string;
+}
+
+export const MovementTypeLabels: Record<number, string> = {
+  1: "شراء",
+  2: "بيع",
+  3: "تحويل وارد",
+  4: "تحويل صادر",
+  5: "تسوية وارد",
+  6: "تسوية صادر",
+  7: "مرتجع وارد",
+  8: "مرتجع صادر",
+  9: "رصيد افتتاحي",
+};
+
+export interface LogHistory {
+  id: number;
+  entityName: string;
+  entityId: number;
+  action: string;
+  oldValues?: string | null;
+  newValues?: string | null;
+  changedFields?: string | null;
+  userId: string;
+  userName: string;
+  timestamp: string;
+  notes?: string | null;
+}
