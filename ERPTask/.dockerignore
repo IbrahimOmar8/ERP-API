@@ -1,0 +1,10 @@
+**/bin
+**/obj
+**/.vs
+**/node_modules
+**/.git
+**/erp.db
+**/erp.db-shm
+**/erp.db-wal
+Web/
+Mobile/

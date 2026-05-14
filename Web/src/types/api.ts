@@ -256,3 +256,74 @@ export const PaymentMethodLabels: Record<number, string> = {
   6: "آجل",
   7: "قسيمة",
 };
+
+export interface Category {
+  id: string;
+  nameAr: string;
+  nameEn?: string | null;
+  parentCategoryId?: string | null;
+  parentName?: string | null;
+  isActive: boolean;
+}
+
+export interface Unit {
+  id: string;
+  nameAr: string;
+  nameEn?: string | null;
+  code: string;
+  isActive: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  taxRegistrationNumber?: string | null;
+  commercialRegister?: string | null;
+  balance: number;
+  isActive: boolean;
+}
+
+export interface PurchaseInvoiceItem {
+  id: string;
+  productId: string;
+  productName?: string | null;
+  quantity: number;
+  unitCost: number;
+  discountAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  lineTotal: number;
+}
+
+export interface PurchaseInvoice {
+  id: string;
+  invoiceNumber: string;
+  supplierId: string;
+  supplierName?: string | null;
+  warehouseId: string;
+  warehouseName?: string | null;
+  invoiceDate: string;
+  subTotal: number;
+  discountAmount: number;
+  vatAmount: number;
+  total: number;
+  paid: number;
+  remaining: number;
+  notes?: string | null;
+  items: PurchaseInvoiceItem[];
+}
+
+export interface ApiUser {
+  id: string;
+  userName: string;
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  defaultWarehouseId?: string | null;
+  defaultCashRegisterId?: string | null;
+  isActive: boolean;
+  roles: string[];
+}

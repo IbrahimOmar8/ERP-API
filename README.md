@@ -71,7 +71,14 @@
 
 ## التشغيل
 
-### Backend (API)
+### الأسهل: Docker Compose
+```bash
+cp .env.example .env   # غيّر JWT_KEY على الأقل
+docker compose up -d --build
+```
+الـ API على `:5000`، الويب على `:3000`. قاعدة البيانات SQLite تُحفظ في volume باسم `api-data`.
+
+### Backend (API) — تطوير محلي
 ```bash
 cd ERPTask
 dotnet restore
@@ -83,7 +90,7 @@ dotnet run
 - **كلمة المرور:** `Admin@1234`  
   (غيّرها فوراً عبر `POST /api/Auth/change-password`)
 
-### Web (Next.js)
+### Web (Next.js) — تطوير محلي
 ```bash
 cd Web
 cp .env.local.example .env.local
