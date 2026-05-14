@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Printer, FileText, Send, RefreshCw, Ban } from "lucide-react";
+import { Printer, FileText, Send, RefreshCw, Ban, Undo2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney, formatDateTime } from "@/lib/format";
 import {
@@ -23,6 +23,8 @@ export default function SaleDetailPage() {
   const qc = useQueryClient();
   const [cancelReason, setCancelReason] = useState("");
   const [showCancel, setShowCancel] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [showRefund, setShowRefund] = useState(false);
 
   const sale = useQuery({
     queryKey: ["sale", id],
@@ -68,6 +70,17 @@ export default function SaleDetailPage() {
     onError: (e) => toast.error(errorMessage(e)),
   });
 
+  const refund = useMutation({
+    mutationFn: async () => (await api.post(`/Sales/${id}/refund`, { reason: refundReason })).data,
+    onSuccess: () => {
+      toast.success("تم تسجيل المرتجع وإعادة الأصناف للمخزون");
+      setShowRefund(false);
+      setRefundReason("");
+      qc.invalidateQueries({ queryKey: ["sale", id] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+
   if (sale.isLoading || !sale.data) return <p>جاري التحميل...</p>;
   const s = sale.data;
 
@@ -85,7 +98,33 @@ export default function SaleDetailPage() {
         >
           <FileText size={16} /> طباعة حرارية
         </a>
+        {s.status === 1 && (
+          <button onClick={() => setShowRefund(!showRefund)} className="btn-danger">
+            <Undo2 size={16} /> مرتجع
+          </button>
+        )}
       </PageHeader>
+
+      {showRefund && (
+        <div className="card mb-4 border-2 border-red-300 bg-red-50">
+          <h3 className="font-bold mb-2">تأكيد المرتجع</h3>
+          <p className="text-sm text-slate-600 mb-3">
+            سيتم إرجاع كامل أصناف الفاتورة للمخزون وتعديل حالة الفاتورة إلى "مرتجعة".
+          </p>
+          <label>سبب المرتجع</label>
+          <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="اكتب السبب" />
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => refund.mutate()}
+              disabled={!refundReason.trim() || refund.isPending}
+              className="btn-danger"
+            >
+              {refund.isPending ? "جاري..." : "تأكيد المرتجع"}
+            </button>
+            <button onClick={() => setShowRefund(false)} className="btn-outline">إلغاء</button>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-4">
         <div className="card">

@@ -15,6 +15,9 @@ namespace Application.Inerfaces.POS
     {
         Task<List<CashRegisterDto>> GetAllAsync();
         Task<CashRegisterDto> CreateAsync(CreateCashRegisterDto dto);
+        Task<CashRegisterDto?> UpdateAsync(Guid id, CreateCashRegisterDto dto);
+        Task<bool> DeleteAsync(Guid id);
+        Task<CashRegisterDto?> SetActiveAsync(Guid id, bool active);
     }
 
     public interface ICashSessionService

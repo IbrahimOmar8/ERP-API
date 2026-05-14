@@ -19,9 +19,19 @@ import {
   FileText,
   Database,
   UserCog,
+  ClipboardCheck,
+  Terminal,
+  History,
 } from "lucide-react";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  requireRole?: string;
+};
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
   { href: "/pos", label: "نقطة البيع", icon: ShoppingCart },
   { href: "/cash-sessions", label: "جلسات الكاش", icon: Wallet },
@@ -31,12 +41,15 @@ const navItems = [
   { href: "/suppliers", label: "الموردون", icon: Truck },
   { href: "/products", label: "الأصناف", icon: Package },
   { href: "/stock", label: "الرصيد", icon: Warehouse },
+  { href: "/stock-adjustment", label: "جرد المخزون", icon: ClipboardCheck },
   { href: "/transfers", label: "التحويلات", icon: ArrowLeftRight },
   { href: "/sales-report", label: "تقرير المبيعات", icon: TrendingUp },
   { href: "/master-data", label: "البيانات الأساسية", icon: Database },
-  { href: "/users", label: "المستخدمون", icon: UserCog, requireRole: "Admin" as const },
+  { href: "/cash-registers", label: "ماكينات الكاشير", icon: Terminal },
+  { href: "/users", label: "المستخدمون", icon: UserCog, requireRole: "Admin" },
+  { href: "/audit-log", label: "سجل العمليات", icon: History, requireRole: "Admin" },
   { href: "/settings", label: "الإعدادات", icon: Settings },
-] as const;
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -56,7 +69,7 @@ export default function Sidebar() {
       </div>
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
         {navItems
-          .filter((item) => !("requireRole" in item) || (user?.roles ?? []).includes(item.requireRole))
+          .filter((item) => !item.requireRole || (user?.roles ?? []).includes(item.requireRole))
           .map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
