@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { History } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { LogHistory } from "@/types/api";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonRow } from "@/components/Skeleton";
 
 const ACTION_COLORS: Record<string, string> = {
   Create: "bg-emerald-100 text-emerald-800",
@@ -74,8 +77,19 @@ export default function AuditLogPage() {
             </tr>
           </thead>
           <tbody>
-            {isLoading ? <tr><td colSpan={6} className="text-center py-6">جاري التحميل...</td></tr> :
-              filtered.length === 0 ? <tr><td colSpan={6} className="text-center py-6 text-slate-400">لا توجد سجلات</td></tr> :
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} cols={6} />)
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={History}
+                    title="لا توجد سجلات"
+                    description="ستظهر هنا كل العمليات الحساسة (إنشاء/تعديل/حذف) على النظام."
+                  />
+                </td>
+              </tr>
+            ) : (
               filtered.map((l) => (
                 <tr key={l.id}>
                   <td className="text-xs">{formatDateTime(l.timestamp)}</td>
@@ -89,7 +103,8 @@ export default function AuditLogPage() {
                   <td className="text-xs">{l.changedFields}</td>
                   <td className="text-xs text-slate-500">{l.notes}</td>
                 </tr>
-              ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

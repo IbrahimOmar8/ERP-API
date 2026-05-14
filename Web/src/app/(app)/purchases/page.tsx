@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { FileText, Plus, Trash2 } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonRow } from "@/components/Skeleton";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney, formatDate } from "@/lib/format";
 import type { Product, PurchaseInvoice, Supplier, Warehouse } from "@/types/api";
@@ -136,19 +138,32 @@ export default function PurchasesPage() {
             </tr>
           </thead>
           <tbody>
-            {list.data?.map((p) => (
-              <tr key={p.id}>
-                <td className="font-mono text-xs">{p.invoiceNumber}</td>
-                <td>{p.supplierName}</td>
-                <td>{p.warehouseName}</td>
-                <td>{formatDate(p.invoiceDate)}</td>
-                <td className="font-semibold">{formatMoney(p.total)}</td>
-                <td>{formatMoney(p.paid)}</td>
-                <td className={p.remaining > 0 ? "text-amber-700 font-medium" : ""}>{formatMoney(p.remaining)}</td>
+            {list.isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={7} />)
+            ) : list.data?.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState
+                    icon={FileText}
+                    title="لا توجد فواتير شراء"
+                    description="ابدأ بتسجيل فاتورة شراء لاستلام أصناف من الموردين."
+                    actionLabel="فاتورة جديدة"
+                    onAction={() => setOpen(true)}
+                  />
+                </td>
               </tr>
-            ))}
-            {list.data?.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-6 text-slate-400">لا توجد فواتير شراء</td></tr>
+            ) : (
+              list.data?.map((p) => (
+                <tr key={p.id}>
+                  <td className="font-mono text-xs">{p.invoiceNumber}</td>
+                  <td>{p.supplierName}</td>
+                  <td>{p.warehouseName}</td>
+                  <td>{formatDate(p.invoiceDate)}</td>
+                  <td className="font-semibold">{formatMoney(p.total)}</td>
+                  <td>{formatMoney(p.paid)}</td>
+                  <td className={p.remaining > 0 ? "text-amber-700 font-medium" : ""}>{formatMoney(p.remaining)}</td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Plus, Trash2, CheckCircle2, X } from "lucide-react";
+import { ArrowLeftRight, CheckCircle2, Plus, Trash2, X } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonRow } from "@/components/Skeleton";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney, formatDateTime } from "@/lib/format";
 import type { Product, StockTransfer, Warehouse } from "@/types/api";
@@ -183,7 +185,20 @@ export default function TransfersPage() {
             </tr>
           </thead>
           <tbody>
-            {list.data?.map((t) => (
+            {list.isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={8} />)
+            ) : list.data?.length === 0 ? (
+              <tr>
+                <td colSpan={8}>
+                  <EmptyState
+                    icon={ArrowLeftRight}
+                    title="لا توجد تحويلات"
+                    description="استخدم نموذج التحويل أعلاه لنقل أصناف بين المخازن."
+                  />
+                </td>
+              </tr>
+            ) : (
+              list.data?.map((t) => (
               <tr key={t.id}>
                 <td className="font-mono text-xs">{t.transferNumber}</td>
                 <td>{t.fromWarehouseName}</td>
@@ -217,7 +232,8 @@ export default function TransfersPage() {
                   )}
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>
