@@ -8,15 +8,22 @@
 - **Domain** - النماذج والكيانات والـ Enums
 - **Application** - DTOs والخدمات وواجهات الأعمال
 - **Infrastructure** - EF Core (SQLite)، DbContext، Migrations
-- **ERPTask** - مشروع API (Controllers + Swagger)
+- **ERPTask** - مشروع API (Controllers + Swagger) **+ تطبيق Blazor Server للويب**
 
 ### 2. Mobile (Flutter)
 تطبيق موبايل في مجلد `Mobile/` يدعم:
 - نقاط البيع (POS) مع قارئ الباركود
 - إدارة جلسات الكاش
-- عرض المخزون والأرصدة
+- عرض المخزون والأرصدة وتحويلات المخازن
+- لوحة تحكم + تقارير المبيعات
+- طباعة فاتورة 80mm حرارية + مشاركة PDF
 - ضريبة القيمة المضافة المصرية (14%)
-- تكامل الفاتورة الإلكترونية (ETA)
+- تكامل الفاتورة الإلكترونية ETA (إرسال / تحديث / إلغاء)
+
+### 3. Web (Blazor Server)
+- مدمج داخل مشروع `ERPTask` نفسه (نفس الـ API).
+- صفحات: تسجيل الدخول، لوحة التحكم، نقطة البيع، الفواتير، تفاصيل الفاتورة، الأصناف، الرصيد، تحويلات المخازن، تقرير المبيعات.
+- مصادقة بـ Cookie منفصلة عن الـ JWT بطريقة `ForwardDefaultSelector` (Bearer → JWT، غير ذلك → Cookie).
 
 ## الوحدات الوظيفية
 
@@ -27,7 +34,7 @@
 - حركات المخزون (وارد، صادر، تحويل، تسوية، مرتجع)
 - التكلفة المتوسطة (Weighted Average)
 - فواتير المشتريات + الموردون
-- تحويلات المخازن
+- **تحويلات بين المخازن** مع الحفاظ على التكلفة المتوسطة
 - ضبط المخزون (Stock Adjustment)
 
 ### نقاط البيع
@@ -37,15 +44,32 @@
 - المرتجعات
 - خصم على مستوى البند أو الفاتورة
 - ضريبة القيمة المضافة المصرية
+- **طباعة الفواتير**: HTML (A4 + 80mm حراري) + QR code متوافق مع مواصفات ETA
+- **تقرير X/Z** لجلسة الكاشير (نقدي، بطاقة، فروق)
 
-### الامتثال المصري
-- ملف الشركة (الرقم الضريبي، السجل التجاري، كود النشاط)
+### التقارير ولوحة التحكم
+- `GET /api/reports/dashboard` — KPIs لليوم والشهر (مبيعات، أرباح، عدد الفواتير، عملاء، أصناف، أصناف بحد أدنى، قيمة المخزون، جلسات مفتوحة)
+- `GET /api/reports/sales?from=&to=&warehouseId=` — تقرير مبيعات يومي بصافي وضريبة وربح
+- `GET /api/reports/top-products?from=&to=&take=10` — الأعلى مبيعاً
+- `GET /api/reports/stock?warehouseId=&onlyLow=true` — تقرير المخزون
+- `GET /api/reports/cash-sessions/{sessionId}` — تقرير X/Z للجلسة
+
+### الامتثال المصري (ETA)
+- ملف الشركة (الرقم الضريبي، السجل التجاري، كود النشاط، EtaClientId/Secret)
 - معدلات الضرائب (T1, T2, T3)
-- إرسال الفواتير الإلكترونية للمصلحة (ETA Submissions)
+- **تكامل ETA حقيقي**:
+  - OAuth2 Client Credentials مع تخزين كاش للتوكن لكل عميل
+  - بناء مستند الفاتورة بمواصفات ETA كاملة (Issuer/Receiver/Lines/Taxes/Signatures)
+  - `EtaCanonicalSerializer` ينتج النص القانوني المُستخدم في توقيع CMS/PKCS7 وحساب SHA-256
+  - `POST /api/einvoice/sales/{id}/submit` — إرسال للمصلحة (مع توقيع CMS اختياري)
+  - `POST /api/einvoice/sales/{id}/refresh` — تحديث الحالة من ETA
+  - `POST /api/einvoice/sales/{id}/cancel` — إلغاء الفاتورة من المصلحة بسبب
+  - `GET /api/einvoice/recent` — آخر الإرساليات
+  - `GET /api/sales/{id}/qr` — QR ETA (`ETA|company|TRN|date|total|vat|invoiceNo|UUID`)
 
 ## التشغيل
 
-### Backend
+### Backend + Web (مدمج)
 ```bash
 cd ERPTask
 dotnet restore
@@ -54,18 +78,40 @@ dotnet run
 
 عند أول تشغيل سيتم إنشاء قاعدة البيانات وحساب المدير الافتراضي:
 - **اسم المستخدم:** `admin`
-- **كلمة المرور:** `Admin@1234` (غيّرها فوراً عبر `POST /api/Auth/change-password`)
+- **كلمة المرور:** `Admin@1234`  
+  (غيّرها فوراً عبر `POST /api/Auth/change-password`)
 
-> ⚠️ **هام:** قبل التشغيل في بيئة الإنتاج، عدّل `appsettings.json` ✦ `Jwt:Key` لمفتاح عشوائي طويل (32+ حرف) و `DefaultAdminPassword`.
+ثم افتح:
+| الواجهة | الرابط |
+|---|---|
+| Swagger API | `http://localhost:5000/swagger` |
+| تطبيق الويب (Blazor) | `http://localhost:5000/` |
+| تسجيل الدخول للويب | `http://localhost:5000/login` |
 
-### الأدوار
-- `Admin` - كل الصلاحيات
-- `Manager` - إدارة الأصناف، المخازن، الموظفين، المبيعات
-- `Cashier` - فتح/إغلاق جلسة وبيع
-- `WarehouseKeeper` - إدارة الأصناف والمخزون والمشتريات
-- `Accountant` - الفواتير والمدفوعات والمرتجعات
+> ⚠️ **قبل الإنتاج**: عدّل `appsettings.json` ✦ `Jwt:Key` لمفتاح عشوائي طويل (32+ حرف) و `DefaultAdminPassword`.
 
-Swagger متاح على: `http://localhost:5000/swagger`
+### تفعيل تكامل ETA الحقيقي
+1. في `appsettings.json` غيّر `EtaInvoicing.Enabled` إلى `true`:
+   ```json
+   "EtaInvoicing": {
+     "BaseUrl": "https://api.preprod.invoicing.eta.gov.eg",
+     "AuthUrl": "https://id.preprod.eta.gov.eg/connect/token",
+     "Scope": "InvoicingAPI",
+     "RequestTimeoutSeconds": 60,
+     "Enabled": true
+   }
+   ```
+2. أنشئ سجلاً في جدول `CompanyProfiles` وعبّئ:
+   - `TaxRegistrationNumber` (الرقم الضريبي)
+   - `EtaClientId` (Client ID من بوابة ETA)
+   - `EtaClientSecret` (Client Secret)
+   - `EtaEnabled = true`
+3. للتقديم بتوقيع حقيقي مرّر `signedCmsBase64` (PKCS#7 من USB Token / HSM):
+   ```http
+   POST /api/einvoice/sales/{saleId}/submit
+   { "signedCmsBase64": "MIIK..." }
+   ```
+   إذا تُرك null، يُرسل hash SHA-256 للنص الكنسي (مناسب لاختبار preprod فقط).
 
 ### Mobile
 ```bash
@@ -73,14 +119,32 @@ cd Mobile
 flutter pub get
 flutter run
 ```
+عدّل `Mobile/lib/core/config/api_config.dart` ✦ `baseUrl` ليشير إلى عنوان السيرفر (افتراضياً `http://10.0.2.2:5000/api` لـ Android emulator).
+
+## المصادقة (Auth)
+
+| المسار | الطريقة |
+|---|---|
+| `/api/*` | JWT Bearer (يتم تجديده بـ `/api/Auth/refresh`) |
+| `/login`, `/dashboard`, `/pos`, ... (الويب) | Cookie auth — `/login-cookie` يُسجّل الدخول وينشئ الكوكي |
+
+`ForwardDefaultSelector` يفحص هيدر `Authorization`: إن بدأ بـ `Bearer ` يستخدم JWT، وإلا يستخدم Cookie.
+
+## الأدوار
+- `Admin` - كل الصلاحيات
+- `Manager` - إدارة الأصناف، المخازن، الموظفين، المبيعات، التحويلات
+- `Cashier` - فتح/إغلاق جلسة وبيع
+- `WarehouseKeeper` - إدارة الأصناف والمخزون والمشتريات والتحويلات
+- `Accountant` - الفواتير والمدفوعات والمرتجعات وتقارير ETA
 
 ## التقنيات
 
 - 🔧 .NET 8 Web API + EF Core 8 + SQLite
-- 📱 Flutter 3.19+
+- 🌐 Blazor Server (Razor Pages + SignalR)
+- 📱 Flutter 3.19+ مع `pdf` + `printing` + `flutter_barcode_scanner`
 - 📊 AutoMapper, MediatR
 - 🧪 Swagger UI
-- 🧾 ETA E-Invoicing (Egyptian Tax Authority)
+- 🧾 ETA E-Invoicing (Egyptian Tax Authority) + QRCoder
 
 ## بنية المشروع
 
@@ -90,13 +154,33 @@ flutter run
 │   ├── Models/
 │   │   ├── Inventory/   # نماذج المخازن
 │   │   ├── POS/         # نماذج نقاط البيع
-│   │   └── Egypt/       # نماذج الامتثال المصري
+│   │   ├── Egypt/       # نماذج الامتثال المصري
+│   │   └── Auth/        # المستخدمون والأدوار
 │   └── Enums/
-├── Application/         # المنطق الأعمال
+├── Application/         # منطق الأعمال
 │   ├── DTOs/
 │   ├── Services/
+│   │   ├── Egypt/       # ETA token + canonical serializer + document builder
+│   │   ├── Reports/     # تقارير ولوحة تحكم
+│   │   └── Inventory/   # ... + StockTransferService
 │   └── Inerfaces/
 ├── Infrastructure/      # EF Core + الـ DbContext
-├── ERPTask/             # Web API + Controllers
+├── ERPTask/             # Web API + Blazor Server
+│   ├── Controllers/     # ETA, Reports, StockTransfers, InvoicePrint, ...
+│   ├── Services/        # InvoicePrintService (HTML A4 + 80mm + QR)
+│   ├── Pages/           # _Host.cshtml + Login.cshtml
+│   ├── Web/Pages/       # صفحات Blazor (Pos, Dashboard, ...)
+│   ├── Shared/          # MainLayout, RedirectToLogin
+│   └── wwwroot/css/     # site.css
 └── Mobile/              # تطبيق Flutter
+    └── lib/features/
+        ├── auth/        # تسجيل الدخول وإدارة JWT
+        ├── pos/         # كاشير + فواتير + ETA + طباعة PDF
+        ├── inventory/   # أصناف + رصيد + تحويلات
+        └── reports/     # Dashboard + Sales report
 ```
+
+## ملاحظات مهمة قبل النشر
+- لم يتم تنفيذ `dotnet build` في بيئة المطور الأصلية لعدم توفر SDK محلياً؛ شغّل `dotnet restore && dotnet build` على جهازك للتأكد من نجاح الكومبايل قبل أول تشغيل.
+- لتجربة الـ ETA في بيئة الإنتاج راجع وثائق ETA لاستبدال preprod URLs بـ production URLs.
+- الويب يستخدم SignalR (Blazor Server) — تأكد من إعدادات الـ WebSocket / Reverse Proxy إن كنت خلف Nginx أو IIS.
