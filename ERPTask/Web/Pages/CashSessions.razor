@@ -1,0 +1,148 @@
+@page "/cash-sessions"
+@namespace ERPTask.Web.Pages
+@attribute [Authorize(Roles = $"{Domain.Enums.Roles.Admin},{Domain.Enums.Roles.Manager},{Domain.Enums.Roles.Cashier}")]
+@inject Application.Inerfaces.POS.ICashSessionService Sessions
+@inject Application.Inerfaces.POS.ICashRegisterService Registers
+@inject AuthenticationStateProvider AuthState
+
+<h1>جلسات الكاش</h1>
+
+@if (_error != null)
+{
+    <div class="alert error">@_error</div>
+}
+
+<div class="card">
+    @if (_current == null)
+    {
+        <h3>فتح جلسة جديدة</h3>
+        <div class="row">
+            <div>
+                <label>الكاشير</label>
+                <select @bind="_registerId">
+                    <option value="">اختر</option>
+                    @foreach (var r in _registers)
+                    {
+                        <option value="@r.Id">@r.Name (@r.WarehouseName)</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label>الرصيد الافتتاحي</label>
+                <input type="number" step="0.01" min="0" @bind="_openingBalance" />
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+                <button class="btn success" @onclick="Open" disabled="@(string.IsNullOrEmpty(_registerId) || _busy)">فتح الجلسة</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <h3>الجلسة الحالية — @_current.CashRegisterName</h3>
+        <table>
+            <tr><th>فُتحت في</th><td>@_current.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td></tr>
+            <tr><th>الرصيد الافتتاحي</th><td>@_current.OpeningBalance.ToString("N2")</td></tr>
+            <tr><th>مبيعات نقدي</th><td>@_current.TotalCashSales.ToString("N2")</td></tr>
+            <tr><th>مبيعات بطاقة</th><td>@_current.TotalCardSales.ToString("N2")</td></tr>
+            <tr><th>مبيعات أخرى</th><td>@_current.TotalOtherSales.ToString("N2")</td></tr>
+            <tr><th>الرصيد المتوقع</th><td>@_current.ExpectedBalance.ToString("N2")</td></tr>
+        </table>
+        <div class="row" style="margin-top:8px;">
+            <div>
+                <label>الرصيد الفعلي عند الإغلاق</label>
+                <input type="number" step="0.01" min="0" @bind="_closingBalance" />
+            </div>
+            <div>
+                <label>ملاحظات</label>
+                <input @bind="_closingNotes" />
+            </div>
+        </div>
+        <button class="btn danger" style="margin-top:8px;" @onclick="Close" disabled="@_busy">إغلاق الجلسة</button>
+    }
+</div>
+
+<div class="card">
+    <h3>كل الجلسات</h3>
+    <table>
+        <thead>
+            <tr><th>الكاشير</th><th>فُتحت</th><th>أُغلقت</th><th>افتتاحي</th><th>متوقع</th><th>فعلي</th><th>فرق</th><th>الحالة</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in _all)
+            {
+                <tr style="@(s.Difference != 0 && s.ClosedAt != null ? "background:#fff3e0;" : "")">
+                    <td>@s.CashRegisterName</td>
+                    <td>@s.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@(s.ClosedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                    <td>@s.OpeningBalance.ToString("N2")</td>
+                    <td>@s.ExpectedBalance.ToString("N2")</td>
+                    <td>@(s.ClosedAt == null ? "—" : s.ClosingBalance.ToString("N2"))</td>
+                    <td>@(s.ClosedAt == null ? "—" : s.Difference.ToString("N2"))</td>
+                    <td>@(s.Status == Domain.Enums.CashSessionStatus.Open ? "🟢 مفتوحة" : "⚫ مغلقة")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private CashSessionDto? _current;
+    private List<CashRegisterDto> _registers = new();
+    private List<CashSessionDto> _all = new();
+    private string _registerId = "";
+    private decimal _openingBalance;
+    private decimal _closingBalance;
+    private string? _closingNotes;
+    private string? _error;
+    private bool _busy;
+    private Guid _userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        Guid.TryParse(state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
+        await Reload();
+    }
+
+    private async Task Reload()
+    {
+        _current = await Sessions.GetCurrentSessionAsync(_userId);
+        _registers = await Registers.GetAllAsync();
+        _all = await Sessions.GetAllAsync();
+    }
+
+    private async Task Open()
+    {
+        _error = null; _busy = true;
+        try
+        {
+            await Sessions.OpenAsync(new OpenSessionDto
+            {
+                CashRegisterId = Guid.Parse(_registerId),
+                OpeningBalance = _openingBalance
+            }, _userId);
+            await Reload();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    private async Task Close()
+    {
+        if (_current == null) return;
+        _error = null; _busy = true;
+        try
+        {
+            await Sessions.CloseAsync(_current.Id, new CloseSessionDto
+            {
+                ClosingBalance = _closingBalance,
+                Notes = _closingNotes
+            });
+            _closingBalance = 0;
+            _closingNotes = null;
+            await Reload();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+}

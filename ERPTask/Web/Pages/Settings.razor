@@ -1,0 +1,143 @@
+@page "/settings"
+@namespace ERPTask.Web.Pages
+@attribute [Authorize(Roles = $"{Domain.Enums.Roles.Admin},{Domain.Enums.Roles.Manager}")]
+@inject Application.Inerfaces.Egypt.ICompanyProfileService Service
+
+<h1>إعدادات الشركة</h1>
+
+@if (_error != null)
+{
+    <div class="alert error">@_error</div>
+}
+@if (_saved)
+{
+    <div class="alert success">تم الحفظ بنجاح</div>
+}
+
+<div class="card">
+    <h3>بيانات الشركة</h3>
+    <div class="row">
+        <div>
+            <label>الاسم بالعربية *</label>
+            <input @bind="_form.NameAr" />
+        </div>
+        <div>
+            <label>الاسم بالإنجليزية</label>
+            <input @bind="_form.NameEn" />
+        </div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+        <div>
+            <label>الرقم الضريبي *</label>
+            <input @bind="_form.TaxRegistrationNumber" />
+        </div>
+        <div>
+            <label>السجل التجاري</label>
+            <input @bind="_form.CommercialRegister" />
+        </div>
+        <div>
+            <label>كود النشاط</label>
+            <input @bind="_form.ActivityCode" />
+        </div>
+    </div>
+    <div style="margin-top:8px;">
+        <label>العنوان *</label>
+        <input @bind="_form.Address" />
+    </div>
+    <div class="row" style="margin-top:8px;">
+        <div>
+            <label>المحافظة</label>
+            <input @bind="_form.Governorate" />
+        </div>
+        <div>
+            <label>المدينة</label>
+            <input @bind="_form.City" />
+        </div>
+        <div>
+            <label>الهاتف</label>
+            <input @bind="_form.Phone" />
+        </div>
+        <div>
+            <label>البريد الإلكتروني</label>
+            <input @bind="_form.Email" />
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>تكامل ETA (الفاتورة الإلكترونية)</h3>
+    <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <input type="checkbox" @bind="_form.EtaEnabled" style="width:auto;" />
+        <span>تفعيل الإرسال للمصلحة</span>
+    </label>
+    <div class="row">
+        <div>
+            <label>Issuer ID</label>
+            <input @bind="_form.EtaIssuerId" />
+        </div>
+        <div>
+            <label>Client ID</label>
+            <input @bind="_form.EtaClientId" />
+        </div>
+        <div>
+            <label>Client Secret</label>
+            <input @bind="_form.EtaClientSecret" type="password"
+                placeholder="@(_hasSecret ? "محفوظ — اتركه فارغ للحفاظ على الحالي" : "")" />
+        </div>
+    </div>
+    @if (_hasSecret)
+    {
+        <small style="color:#888;">السر محفوظ بالفعل. لتغييره أدخل قيمة جديدة فقط.</small>
+    }
+</div>
+
+<button class="btn success" style="padding:12px 24px; font-size:16px;" @onclick="Save" disabled="@_saving">
+    @(_saving ? "جاري الحفظ..." : "حفظ")
+</button>
+
+@code {
+    private UpdateCompanyProfileDto _form = new();
+    private bool _hasSecret;
+    private string? _error;
+    private bool _saved;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var current = await Service.GetAsync();
+        if (current != null)
+        {
+            _form = new UpdateCompanyProfileDto
+            {
+                NameAr = current.NameAr,
+                NameEn = current.NameEn,
+                TaxRegistrationNumber = current.TaxRegistrationNumber,
+                CommercialRegister = current.CommercialRegister,
+                ActivityCode = current.ActivityCode,
+                Address = current.Address,
+                Governorate = current.Governorate,
+                City = current.City,
+                Phone = current.Phone,
+                Email = current.Email,
+                EtaClientId = current.EtaClientId,
+                EtaIssuerId = current.EtaIssuerId,
+                EtaEnabled = current.EtaEnabled
+            };
+            _hasSecret = current.HasEtaSecret;
+        }
+    }
+
+    private async Task Save()
+    {
+        _error = null; _saved = false; _saving = true;
+        try
+        {
+            var result = await Service.UpsertAsync(_form);
+            _hasSecret = result.HasEtaSecret;
+            _form.EtaClientSecret = null;
+            _saved = true;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+}
