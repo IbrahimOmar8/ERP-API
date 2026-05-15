@@ -36,6 +36,7 @@ import {
   Key,
   Webhook,
   Hourglass,
+  UsersRound,
 } from "lucide-react";
 
 type NavItem = {
@@ -65,6 +66,7 @@ const navItems: NavItem[] = [
   { href: "/reports/cash-flow", label: "التدفق النقدي", icon: Banknote },
   { href: "/reports/inventory-aging", label: "عمر المخزون", icon: Hourglass },
   { href: "/reports/cashier-performance", label: "أداء الكاشيرين", icon: UserCog },
+  { href: "/hr", label: "الموارد البشرية", icon: UsersRound },
   { href: "/master-data", label: "البيانات الأساسية", icon: Database },
   { href: "/import", label: "استيراد جماعي", icon: Upload },
   { href: "/cash-registers", label: "ماكينات الكاشير", icon: Terminal },

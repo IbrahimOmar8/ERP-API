@@ -576,3 +576,172 @@ export interface LogHistory {
   timestamp: string;
   notes?: string | null;
 }
+
+// ─── HR ─────────────────────────────────────────────────────────────────
+
+export interface Position {
+  id: string;
+  title: string;
+  baseSalary: number;
+  departmentId?: string | null;
+  departmentName?: string | null;
+  description?: string | null;
+  isActive: boolean;
+  employeeCount: number;
+}
+
+export interface HrEmployee {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  nationalId?: string | null;
+  address?: string | null;
+  photoUrl?: string | null;
+  hireDate: string;
+  terminationDate?: string | null;
+  status: number;
+  departmentId: string;
+  departmentName?: string | null;
+  positionId?: string | null;
+  positionTitle?: string | null;
+  baseSalary: number;
+  allowances: number;
+  deductions: number;
+  overtimeHourlyRate: number;
+  bankName?: string | null;
+  bankAccount?: string | null;
+  notes?: string | null;
+}
+
+export const EmpStatusLabel: Record<number, string> = {
+  0: "نشط",
+  1: "موقوف",
+  2: "غير نشط",
+};
+
+export interface Shift {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  daysMask: number;
+  graceMinutes: number;
+  standardHours: number;
+  overtimeMultiplier: number;
+  latePenaltyPerMinute: number;
+  isActive: boolean;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  employeeId: string;
+  employeeName?: string | null;
+  shiftId: string;
+  shiftName?: string | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  notes?: string | null;
+}
+
+export interface Attendance {
+  id: string;
+  employeeId: string;
+  employeeName?: string | null;
+  date: string;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  shiftId?: string | null;
+  shiftName?: string | null;
+  workedHours: number;
+  overtimeHours: number;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  status: number;
+  notes?: string | null;
+}
+
+export const AttendanceStatusLabel: Record<number, string> = {
+  0: "حاضر",
+  1: "غائب",
+  2: "متأخر",
+  3: "إجازة",
+  4: "عطلة",
+  5: "ويك إند",
+};
+
+export interface AttendanceSummary {
+  employeeId: string;
+  employeeName: string;
+  presentDays: number;
+  absentDays: number;
+  lateDays: number;
+  totalWorkedHours: number;
+  totalOvertimeHours: number;
+  totalLateMinutes: number;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employeeId: string;
+  employeeName?: string | null;
+  type: number;
+  from: string;
+  to: string;
+  days: number;
+  status: number;
+  reason?: string | null;
+  createdAt: string;
+  approvedAt?: string | null;
+}
+
+export const LeaveTypeLabel: Record<number, string> = {
+  0: "سنوية",
+  1: "مرضية",
+  2: "عارضة",
+  3: "بدون أجر",
+  4: "وضع",
+  5: "طارئة",
+  6: "أخرى",
+};
+
+export const LeaveStatusLabel: Record<number, string> = {
+  0: "قيد المراجعة",
+  1: "موافق عليها",
+  2: "مرفوضة",
+  3: "ملغاة",
+};
+
+export interface Payroll {
+  id: string;
+  employeeId: string;
+  employeeName?: string | null;
+  year: number;
+  month: number;
+  baseSalary: number;
+  allowances: number;
+  deductions: number;
+  overtimePay: number;
+  latePenalty: number;
+  unpaidLeavePenalty: number;
+  bonus: number;
+  tax: number;
+  insuranceContribution: number;
+  workingDays: number;
+  absentDays: number;
+  overtimeHours: number;
+  lateMinutes: number;
+  grossPay: number;
+  netPay: number;
+  status: number;
+  notes?: string | null;
+  approvedAt?: string | null;
+  paidAt?: string | null;
+}
+
+export const PayrollStatusLabel: Record<number, string> = {
+  0: "مسودة",
+  1: "معتمدة",
+  2: "مدفوعة",
+  3: "ملغاة",
+};
