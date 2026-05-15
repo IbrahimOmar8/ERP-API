@@ -61,4 +61,50 @@ namespace Application.DTOs.Auth
         [Required, MinLength(6)]
         public string NewPassword { get; set; } = string.Empty;
     }
+
+    public class Enable2FaInitDto
+    {
+        public string Secret { get; set; } = string.Empty;
+        public string OtpAuthUri { get; set; } = string.Empty;
+    }
+
+    public class Enable2FaConfirmDto
+    {
+        [Required]
+        public string Code { get; set; } = string.Empty;
+    }
+
+    public class TwoFactorLoginDto
+    {
+        [Required]
+        public string UserName { get; set; } = string.Empty;
+        [Required]
+        public string Password { get; set; } = string.Empty;
+        [Required]
+        public string Code { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordDto
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordResultDto
+    {
+        // Always returns success to avoid user enumeration; the token is
+        // only present if the email matched and the server is allowed to
+        // expose it (test/dev) — in production this is delivered via email.
+        public bool Success { get; set; } = true;
+        public string? Token { get; set; }
+        public DateTime? ExpiresAt { get; set; }
+    }
+
+    public class ResetPasswordDto
+    {
+        [Required]
+        public string Token { get; set; } = string.Empty;
+        [Required, MinLength(6)]
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

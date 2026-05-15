@@ -30,6 +30,7 @@ import {
   Upload,
   Banknote,
   Ticket,
+  ShieldCheck,
 } from "lucide-react";
 
 type NavItem = {
@@ -61,6 +62,7 @@ const navItems: NavItem[] = [
   { href: "/cash-registers", label: "ماكينات الكاشير", icon: Terminal },
   { href: "/users", label: "المستخدمون", icon: UserCog, requireRole: "Admin" },
   { href: "/audit-log", label: "سجل العمليات", icon: History, requireRole: "Admin" },
+  { href: "/security", label: "الأمن", icon: ShieldCheck },
   { href: "/settings", label: "الإعدادات", icon: Settings },
 ];
 

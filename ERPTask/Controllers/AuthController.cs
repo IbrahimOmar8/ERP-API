@@ -75,5 +75,71 @@ namespace ERPTask.Controllers
             }
             catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
         }
+
+        // ─── Two-factor authentication ─────────────────────────────────
+
+        [AllowAnonymous]
+        [EnableRateLimiting("auth-login")]
+        [HttpPost("login-2fa")]
+        public async Task<IActionResult> LoginWith2Fa(TwoFactorLoginDto dto)
+        {
+            try { return Ok(await _authService.LoginWithTwoFactorAsync(dto)); }
+            catch (InvalidOperationException ex) { return Unauthorized(new { error = ex.Message }); }
+        }
+
+        [Authorize]
+        [HttpPost("2fa/init")]
+        public async Task<IActionResult> Init2Fa()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+            if (!Guid.TryParse(idClaim, out var userId)) return Unauthorized();
+            try { return Ok(await _authService.Init2FaAsync(userId)); }
+            catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+        }
+
+        [Authorize]
+        [HttpPost("2fa/enable")]
+        public async Task<IActionResult> Enable2Fa(Enable2FaConfirmDto dto)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+            if (!Guid.TryParse(idClaim, out var userId)) return Unauthorized();
+            try { return Ok(new { enabled = await _authService.Enable2FaAsync(userId, dto.Code) }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+        }
+
+        public record Disable2FaRequest(string Password);
+
+        [Authorize]
+        [HttpPost("2fa/disable")]
+        public async Task<IActionResult> Disable2Fa(Disable2FaRequest req)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+            if (!Guid.TryParse(idClaim, out var userId)) return Unauthorized();
+            try { return Ok(new { disabled = await _authService.Disable2FaAsync(userId, req.Password) }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+        }
+
+        // ─── Password reset ────────────────────────────────────────────
+
+        [AllowAnonymous]
+        [EnableRateLimiting("auth-login")]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+        {
+            // Always return 200 to avoid email enumeration
+            await _authService.ForgotPasswordAsync(dto.Email);
+            return Ok(new { success = true });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+        {
+            try { return Ok(new { success = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword) }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+        }
     }
 }

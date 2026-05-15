@@ -32,6 +32,16 @@ namespace Domain.Models.Auth
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastLoginAt { get; set; }
 
+        // Two-factor (TOTP) authentication
+        public bool TwoFactorEnabled { get; set; }
+        [StringLength(200)]
+        public string? TwoFactorSecret { get; set; }
+
+        // Password reset
+        [StringLength(200)]
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
         public ICollection<UserRole>? UserRoles { get; set; }
     }
 }
