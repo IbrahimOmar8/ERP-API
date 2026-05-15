@@ -78,6 +78,7 @@ public static class ConfigureServices
 
         // Integration
         services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddHttpClient<IWebhookService, WebhookService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

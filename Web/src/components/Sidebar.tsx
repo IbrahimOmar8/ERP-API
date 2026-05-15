@@ -32,6 +32,7 @@ import {
   Ticket,
   ShieldCheck,
   Key,
+  Webhook,
 } from "lucide-react";
 
 type NavItem = {
@@ -64,6 +65,7 @@ const navItems: NavItem[] = [
   { href: "/users", label: "المستخدمون", icon: UserCog, requireRole: "Admin" },
   { href: "/audit-log", label: "سجل العمليات", icon: History, requireRole: "Admin" },
   { href: "/api-keys", label: "مفاتيح API", icon: Key, requireRole: "Admin" },
+  { href: "/webhooks", label: "Webhooks", icon: Webhook, requireRole: "Admin" },
   { href: "/security", label: "الأمن", icon: ShieldCheck },
   { href: "/settings", label: "الإعدادات", icon: Settings },
 ];

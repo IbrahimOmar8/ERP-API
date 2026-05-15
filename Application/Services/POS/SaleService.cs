@@ -12,11 +12,16 @@ namespace Application.Services.POS
     {
         private readonly ApplicationDbContext _context;
         private readonly IStockService _stockService;
+        private readonly Application.Inerfaces.Integration.IWebhookService _webhooks;
 
-        public SaleService(ApplicationDbContext context, IStockService stockService)
+        public SaleService(
+            ApplicationDbContext context,
+            IStockService stockService,
+            Application.Inerfaces.Integration.IWebhookService webhooks)
         {
             _context = context;
             _stockService = stockService;
+            _webhooks = webhooks;
         }
 
         public async Task<List<SaleDto>> GetAllAsync(SaleFilterDto filter)
@@ -197,7 +202,16 @@ namespace Application.Services.POS
                 throw;
             }
 
-            return (await GetByIdAsync(sale.Id))!;
+            var dto = (await GetByIdAsync(sale.Id))!;
+            await _webhooks.DispatchAsync(Application.DTOs.Integration.WebhookEvents.SaleCreated, new
+            {
+                id = dto.Id,
+                invoiceNumber = dto.InvoiceNumber,
+                customerId = dto.CustomerId,
+                total = dto.Total,
+                saleDate = dto.SaleDate,
+            });
+            return dto;
         }
 
         public async Task<bool> CancelAsync(Guid id)
@@ -261,6 +275,13 @@ namespace Application.Services.POS
                 throw;
             }
 
+            await _webhooks.DispatchAsync(Application.DTOs.Integration.WebhookEvents.SaleRefunded, new
+            {
+                saleId = sale.Id,
+                invoiceNumber = sale.InvoiceNumber,
+                total = sale.Total,
+                reason,
+            });
             return await GetByIdAsync(id);
         }
 

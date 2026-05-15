@@ -56,6 +56,8 @@ namespace Infrastructure.Data
 
         // Integration
         public DbSet<ApiKey> ApiKeys { get; set; }
+        public DbSet<WebhookSubscription> WebhookSubscriptions { get; set; }
+        public DbSet<WebhookDelivery> WebhookDeliveries { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }
