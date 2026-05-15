@@ -17,17 +17,23 @@ namespace Application.Services.Integration
         private readonly ApplicationDbContext _context;
         private readonly HttpClient _http;
         private readonly ILogger<WebhookService> _logger;
+        private readonly IRealtimeBroadcaster _realtime;
         private static readonly JsonSerializerOptions JsonOpts = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
         };
 
-        public WebhookService(ApplicationDbContext context, HttpClient http, ILogger<WebhookService> logger)
+        public WebhookService(
+            ApplicationDbContext context,
+            HttpClient http,
+            ILogger<WebhookService> logger,
+            IRealtimeBroadcaster realtime)
         {
             _context = context;
             _http = http;
             _logger = logger;
+            _realtime = realtime;
             _http.Timeout = TimeSpan.FromSeconds(15);
         }
 
@@ -96,6 +102,11 @@ namespace Application.Services.Integration
 
         public async Task DispatchAsync(string @event, object payload, CancellationToken ct = default)
         {
+            // Broadcast to in-process clients (SignalR) immediately —
+            // fire-and-forget, never block on a slow consumer.
+            try { await _realtime.BroadcastAsync(@event, payload); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Realtime broadcast for {Event} failed", @event); }
+
             // Find every active subscription that listens for this event
             var subs = await _context.WebhookSubscriptions
                 .Where(w => w.IsActive)

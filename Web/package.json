@@ -21,7 +21,8 @@
     "zustand": "4.5.4",
     "react-hot-toast": "2.4.1",
     "date-fns": "3.6.0",
-    "recharts": "2.12.7"
+    "recharts": "2.12.7",
+    "@microsoft/signalr": "8.0.7"
   },
   "devDependencies": {
     "@types/node": "20.14.14",

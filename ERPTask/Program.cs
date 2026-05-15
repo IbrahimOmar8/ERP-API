@@ -17,6 +17,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddScoped<ERPTask.Services.InvoicePrintService>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<Application.Inerfaces.Integration.IRealtimeBroadcaster, ERPTask.Services.RealtimeBroadcaster>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key not configured");
@@ -42,6 +44,21 @@ builder.Services
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.FromMinutes(1)
+        };
+        // Allow SignalR to send the access token as a query-string
+        // (browsers can't set Authorization headers on WebSocket upgrades)
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var accessToken = ctx.Request.Query["access_token"];
+                var path = ctx.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    ctx.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     })
     .AddScheme<ERPTask.Auth.ApiKeyAuthenticationOptions, ERPTask.Auth.ApiKeyAuthenticationHandler>(
@@ -122,6 +139,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ERPTask.Hubs.EventsHub>("/hubs/events");
 
 using (var scope = app.Services.CreateScope())
 {

@@ -1,6 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { subscribe } from "@/lib/realtime";
 import {
   Wallet,
   Receipt,
@@ -22,6 +25,25 @@ import SalesTrendChart from "@/components/SalesTrendChart";
 import { SkeletonCards } from "@/components/Skeleton";
 
 export default function DashboardPage() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const unsubscribers = [
+      subscribe<{ invoiceNumber?: string; total?: number }>("sale.created", (d) => {
+        toast.success(`فاتورة جديدة: ${d?.invoiceNumber ?? ""}`, { duration: 3000 });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["top-products"] });
+        queryClient.invalidateQueries({ queryKey: ["top-customers"] });
+        queryClient.invalidateQueries({ queryKey: ["sales-trend"] });
+      }),
+      subscribe("sale.refunded", () => {
+        toast("تم تسجيل مرتجع", { icon: "↩️" });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      }),
+    ];
+    return () => unsubscribers.forEach((u) => u());
+  }, [queryClient]);
+
   const kpi = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => (await api.get<DashboardKpi>("/reports/dashboard")).data,
