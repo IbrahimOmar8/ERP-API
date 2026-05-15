@@ -5,14 +5,27 @@ namespace Application.DTOs.Reports
         public decimal TodaySales { get; set; }
         public int TodayInvoiceCount { get; set; }
         public decimal TodayProfit { get; set; }
+        public decimal TodayExpenses { get; set; }
+        public decimal TodayNetProfit { get; set; }
         public decimal MonthSales { get; set; }
         public int MonthInvoiceCount { get; set; }
         public decimal MonthProfit { get; set; }
+        public decimal MonthExpenses { get; set; }
+        public decimal MonthNetProfit { get; set; }
         public int CustomerCount { get; set; }
         public int ProductCount { get; set; }
         public int LowStockCount { get; set; }
         public int OpenSessionCount { get; set; }
         public decimal TotalStockValue { get; set; }
+    }
+
+    public class TopCustomerRow
+    {
+        public Guid CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public int InvoiceCount { get; set; }
+        public decimal TotalSpent { get; set; }
+        public DateTime LastPurchase { get; set; }
     }
 
     public class SalesReportRow
