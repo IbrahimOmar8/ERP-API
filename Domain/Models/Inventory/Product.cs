@@ -48,6 +48,10 @@ namespace Domain.Models.Inventory
         public bool TrackStock { get; set; } = true;
         public bool IsActive { get; set; } = true;
 
+        // Public URL or path to the primary product image
+        [StringLength(500)]
+        public string? ImageUrl { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 

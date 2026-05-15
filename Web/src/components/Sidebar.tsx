@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import ThemeToggle from "./ThemeToggle";
+import GlobalSearch from "./GlobalSearch";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -90,18 +91,21 @@ export default function Sidebar() {
 
   const SidebarContent = (
     <>
-      <div className="px-4 py-4 border-b border-slate-700 flex items-center justify-between">
-        <div>
-          <div className="text-lg font-bold">ERP — نقاط البيع</div>
-          <div className="text-xs text-slate-400 mt-1">إصدار 1.0</div>
+      <div className="px-4 py-4 border-b border-slate-700">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-lg font-bold">ERP — نقاط البيع</div>
+            <div className="text-xs text-slate-400 mt-1">إصدار 1.0</div>
+          </div>
+          <button
+            className="lg:hidden text-slate-300 hover:text-white"
+            onClick={() => setOpen(false)}
+            aria-label="إغلاق القائمة"
+          >
+            <X size={22} />
+          </button>
         </div>
-        <button
-          className="lg:hidden text-slate-300 hover:text-white"
-          onClick={() => setOpen(false)}
-          aria-label="إغلاق القائمة"
-        >
-          <X size={22} />
-        </button>
+        <GlobalSearch />
       </div>
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
         {visibleItems.map((item) => {

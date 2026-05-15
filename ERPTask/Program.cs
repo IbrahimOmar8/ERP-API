@@ -152,6 +152,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseStaticFiles(); // serves wwwroot/uploads/...
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

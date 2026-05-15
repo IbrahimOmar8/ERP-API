@@ -10,6 +10,7 @@ import type { Category, Product, Unit } from "@/types/api";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import { useConfirm } from "@/components/ConfirmDialog";
+import ImageUpload from "@/components/ImageUpload";
 
 interface Form {
   id?: string;
@@ -30,6 +31,7 @@ interface Form {
   maxStockLevel: number;
   trackStock: boolean;
   isActive: boolean;
+  imageUrl: string | null;
 }
 
 const emptyForm: Form = {
@@ -50,6 +52,7 @@ const emptyForm: Form = {
   maxStockLevel: 0,
   trackStock: true,
   isActive: true,
+  imageUrl: null,
 };
 
 export default function ProductsPage() {
@@ -132,6 +135,7 @@ export default function ProductsPage() {
       maxStockLevel: p.maxStockLevel,
       trackStock: p.trackStock,
       isActive: p.isActive,
+      imageUrl: p.imageUrl ?? null,
     });
     setOpen(true);
   }
@@ -167,6 +171,7 @@ export default function ProductsPage() {
         <table>
           <thead>
             <tr>
+              <th></th>
               <th>الكود</th>
               <th>الباركود</th>
               <th>الاسم</th>
@@ -179,10 +184,22 @@ export default function ProductsPage() {
           </thead>
           <tbody>
             {products.isLoading ? (
-              <tr><td colSpan={8} className="text-center py-6">جاري التحميل...</td></tr>
+              <tr><td colSpan={9} className="text-center py-6">جاري التحميل...</td></tr>
             ) : (
-              products.data?.map((p) => (
+              products.data?.map((p) => {
+                const apiOrigin = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
+                const img = p.imageUrl
+                  ? (p.imageUrl.startsWith("http") ? p.imageUrl : `${apiOrigin}${p.imageUrl}`)
+                  : null;
+                return (
                 <tr key={p.id} className={!p.isActive ? "opacity-50" : ""}>
+                  <td>
+                    {img ? (
+                      <img src={img} alt="" className="w-10 h-10 rounded object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-800" />
+                    )}
+                  </td>
                   <td className="font-mono text-xs">{p.sku}</td>
                   <td className="font-mono text-xs">{p.barcode}</td>
                   <td className="font-medium">{p.nameAr}</td>
@@ -201,13 +218,18 @@ export default function ProductsPage() {
                     </button>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
       <Modal open={open} title={form.id ? "تعديل صنف" : "صنف جديد"} onClose={() => setOpen(false)} size="lg">
+        <div className="mb-4">
+          <label>صورة الصنف</label>
+          <ImageUpload value={form.imageUrl} onChange={(url) => setForm({ ...form, imageUrl: url })} />
+        </div>
         <div className="grid md:grid-cols-3 gap-3">
           <div>
             <label>الكود (SKU) *</label>

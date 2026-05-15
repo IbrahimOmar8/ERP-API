@@ -62,6 +62,7 @@ namespace Application.Services.Inventory
                 MaxStockLevel = p.MaxStockLevel,
                 TrackStock = p.TrackStock,
                 IsActive = p.IsActive,
+                ImageUrl = p.ImageUrl,
                 CurrentStock = _context.StockItems
                     .Where(s => s.ProductId == p.Id)
                     .Sum(s => (decimal?)s.Quantity) ?? 0
@@ -107,7 +108,8 @@ namespace Application.Services.Inventory
                 GS1Code = dto.GS1Code,
                 MinStockLevel = dto.MinStockLevel,
                 MaxStockLevel = dto.MaxStockLevel,
-                TrackStock = dto.TrackStock
+                TrackStock = dto.TrackStock,
+                ImageUrl = dto.ImageUrl,
             };
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
@@ -136,6 +138,7 @@ namespace Application.Services.Inventory
             product.MaxStockLevel = dto.MaxStockLevel;
             product.TrackStock = dto.TrackStock;
             product.IsActive = dto.IsActive;
+            product.ImageUrl = dto.ImageUrl;
             product.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -178,6 +181,7 @@ namespace Application.Services.Inventory
             MaxStockLevel = p.MaxStockLevel,
             TrackStock = p.TrackStock,
             IsActive = p.IsActive,
+            ImageUrl = p.ImageUrl,
             CurrentStock = currentStock
         };
     }

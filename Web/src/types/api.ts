@@ -19,6 +19,7 @@ export interface Product {
   trackStock: boolean;
   isActive: boolean;
   currentStock: number;
+  imageUrl?: string | null;
 }
 
 export interface Warehouse {

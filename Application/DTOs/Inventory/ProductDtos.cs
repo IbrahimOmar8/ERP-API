@@ -25,6 +25,7 @@ namespace Application.DTOs.Inventory
         public bool TrackStock { get; set; }
         public bool IsActive { get; set; }
         public decimal CurrentStock { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     public class CreateProductDto
@@ -52,6 +53,8 @@ namespace Application.DTOs.Inventory
         public decimal MinStockLevel { get; set; }
         public decimal MaxStockLevel { get; set; }
         public bool TrackStock { get; set; } = true;
+        [StringLength(500)]
+        public string? ImageUrl { get; set; }
     }
 
     public class UpdateProductDto : CreateProductDto
