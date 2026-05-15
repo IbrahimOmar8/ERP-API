@@ -234,6 +234,154 @@ namespace Application.Services.Reports
             };
         }
 
+        public async Task<ProfitLossReportDto> GetProfitLossAsync(DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            var completedSales = _context.Sales
+                .Where(s => s.Status == SaleStatus.Completed && s.SaleDate >= from && s.SaleDate < to);
+            var refundedSales = _context.Sales
+                .Where(s => (s.Status == SaleStatus.Refunded || s.Status == SaleStatus.PartiallyRefunded)
+                            && s.SaleDate >= from && s.SaleDate < to);
+
+            var grossSales = await completedSales.SumAsync(s => (decimal?)s.SubTotal, ct) ?? 0m;
+            var discounts = await completedSales.SumAsync(s => (decimal?)s.DiscountAmount, ct) ?? 0m;
+            var refunds = await refundedSales.SumAsync(s => (decimal?)s.Total, ct) ?? 0m;
+
+            var cogs = await _context.SaleItems
+                .Where(i => i.Sale != null
+                            && i.Sale.Status == SaleStatus.Completed
+                            && i.Sale.SaleDate >= from
+                            && i.Sale.SaleDate < to)
+                .SumAsync(i => (decimal?)(i.UnitCost * i.Quantity), ct) ?? 0m;
+
+            var expensesQuery = _context.Expenses
+                .Where(e => e.ExpenseDate >= from && e.ExpenseDate < to);
+            var operatingExpenses = await expensesQuery.SumAsync(e => (decimal?)e.Amount, ct) ?? 0m;
+
+            var expensesByCategory = await expensesQuery
+                .GroupBy(e => e.Category)
+                .Select(g => new
+                {
+                    Category = g.Key,
+                    Amount = g.Sum(e => e.Amount),
+                })
+                .ToListAsync(ct);
+
+            var report = new ProfitLossReportDto
+            {
+                From = from,
+                To = to,
+                GrossSales = grossSales,
+                Discounts = discounts,
+                Refunds = refunds,
+                CostOfGoodsSold = cogs,
+                OperatingExpenses = operatingExpenses,
+                ExpensesByCategory = expensesByCategory
+                    .OrderByDescending(x => x.Amount)
+                    .Select(x => new ExpenseLine
+                    {
+                        Category = x.Category.ToString(),
+                        CategoryId = (int)x.Category,
+                        Amount = x.Amount,
+                        PercentOfTotal = operatingExpenses == 0
+                            ? 0
+                            : Math.Round(x.Amount / operatingExpenses * 100, 2),
+                    })
+                    .ToList(),
+            };
+            return report;
+        }
+
+        public async Task<CashFlowReportDto> GetCashFlowAsync(DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            // Inflows: payments on completed sales, by method
+            var paymentsQuery = _context.SalePayments
+                .Where(p => p.Sale != null
+                            && p.Sale.Status == SaleStatus.Completed
+                            && p.PaidAt >= from && p.PaidAt < to);
+
+            var paymentsByMethod = await paymentsQuery
+                .GroupBy(p => p.Method)
+                .Select(g => new { Method = g.Key, Amount = g.Sum(p => p.Amount) })
+                .ToListAsync(ct);
+
+            decimal cashIn = paymentsByMethod.Where(x => x.Method == PaymentMethod.Cash).Sum(x => x.Amount);
+            decimal cardIn = paymentsByMethod.Where(x => x.Method == PaymentMethod.Card).Sum(x => x.Amount);
+            decimal otherIn = paymentsByMethod
+                .Where(x => x.Method != PaymentMethod.Cash && x.Method != PaymentMethod.Card)
+                .Sum(x => x.Amount);
+
+            // Outflows
+            var purchasesOut = await _context.PurchaseInvoices
+                .Where(p => p.InvoiceDate >= from && p.InvoiceDate < to)
+                .SumAsync(p => (decimal?)p.Paid, ct) ?? 0m;
+
+            var expensesOut = await _context.Expenses
+                .Where(e => e.ExpenseDate >= from && e.ExpenseDate < to)
+                .SumAsync(e => (decimal?)e.Amount, ct) ?? 0m;
+
+            var refundsOut = await _context.SaleReturns
+                .Where(r => r.ReturnDate >= from && r.ReturnDate < to)
+                .SumAsync(r => (decimal?)r.Total, ct) ?? 0m;
+
+            // Daily breakdown
+            var paymentDays = await paymentsQuery
+                .GroupBy(p => new { p.PaidAt.Year, p.PaidAt.Month, p.PaidAt.Day })
+                .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, In = g.Sum(p => p.Amount) })
+                .ToListAsync(ct);
+
+            var purchaseDays = await _context.PurchaseInvoices
+                .Where(p => p.InvoiceDate >= from && p.InvoiceDate < to)
+                .GroupBy(p => new { p.InvoiceDate.Year, p.InvoiceDate.Month, p.InvoiceDate.Day })
+                .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, Out_ = g.Sum(p => p.Paid) })
+                .ToListAsync(ct);
+
+            var expenseDays = await _context.Expenses
+                .Where(e => e.ExpenseDate >= from && e.ExpenseDate < to)
+                .GroupBy(e => new { e.ExpenseDate.Year, e.ExpenseDate.Month, e.ExpenseDate.Day })
+                .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, Out_ = g.Sum(e => e.Amount) })
+                .ToListAsync(ct);
+
+            var daily = new Dictionary<DateTime, (decimal In, decimal Out)>();
+            foreach (var d in paymentDays)
+            {
+                var dt = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Utc);
+                daily[dt] = (d.In, 0);
+            }
+            foreach (var d in purchaseDays)
+            {
+                var dt = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Utc);
+                var cur = daily.GetValueOrDefault(dt);
+                daily[dt] = (cur.In, cur.Out + d.Out_);
+            }
+            foreach (var d in expenseDays)
+            {
+                var dt = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Utc);
+                var cur = daily.GetValueOrDefault(dt);
+                daily[dt] = (cur.In, cur.Out + d.Out_);
+            }
+
+            return new CashFlowReportDto
+            {
+                From = from,
+                To = to,
+                CashSalesIn = cashIn,
+                CardSalesIn = cardIn,
+                OtherSalesIn = otherIn,
+                PurchasesOut = purchasesOut,
+                ExpensesOut = expensesOut,
+                RefundsOut = refundsOut,
+                Daily = daily
+                    .OrderBy(kv => kv.Key)
+                    .Select(kv => new CashFlowDailyRow
+                    {
+                        Date = kv.Key,
+                        In = kv.Value.In,
+                        Out = kv.Value.Out,
+                    })
+                    .ToList(),
+            };
+        }
+
         private async Task<decimal> ComputeProfitAsync(DateTime from, DateTime to, CancellationToken ct)
         {
             return await _context.SaleItems

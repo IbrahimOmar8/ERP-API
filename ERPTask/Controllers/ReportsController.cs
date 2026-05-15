@@ -65,5 +65,27 @@ namespace ERPTask.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.Manager},{Roles.Cashier},{Roles.Accountant}")]
         public async Task<IActionResult> CashSession(Guid sessionId, CancellationToken ct)
             => (await _service.GetCashSessionReportAsync(sessionId, ct)) is { } r ? Ok(r) : NotFound();
+
+        [HttpGet("pnl")]
+        public async Task<IActionResult> ProfitLoss(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken ct)
+        {
+            var fromU = (from ?? DateTime.UtcNow.AddDays(-30)).ToUniversalTime();
+            var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
+            return Ok(await _service.GetProfitLossAsync(fromU, toU, ct));
+        }
+
+        [HttpGet("cash-flow")]
+        public async Task<IActionResult> CashFlow(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken ct)
+        {
+            var fromU = (from ?? DateTime.UtcNow.AddDays(-30)).ToUniversalTime();
+            var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
+            return Ok(await _service.GetCashFlowAsync(fromU, toU, ct));
+        }
     }
 }

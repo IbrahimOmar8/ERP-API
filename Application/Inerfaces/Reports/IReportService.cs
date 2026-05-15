@@ -9,6 +9,8 @@ namespace Application.Inerfaces.Reports
         Task<IReadOnlyList<TopProductRow>> GetTopProductsAsync(DateTime from, DateTime to, int take, CancellationToken ct = default);
         Task<IReadOnlyList<TopCustomerRow>> GetTopCustomersAsync(DateTime from, DateTime to, int take, CancellationToken ct = default);
         Task<IReadOnlyList<StockReportRow>> GetStockReportAsync(Guid? warehouseId, bool onlyLow, CancellationToken ct = default);
+        Task<ProfitLossReportDto> GetProfitLossAsync(DateTime from, DateTime to, CancellationToken ct = default);
+        Task<CashFlowReportDto> GetCashFlowAsync(DateTime from, DateTime to, CancellationToken ct = default);
         Task<CashSessionReportDto?> GetCashSessionReportAsync(Guid sessionId, CancellationToken ct = default);
     }
 }

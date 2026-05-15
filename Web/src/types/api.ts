@@ -168,6 +168,37 @@ export interface ExpenseSummary {
   byCategory: { category: number; total: number; count: number }[];
 }
 
+export interface ProfitLossReport {
+  from: string;
+  to: string;
+  grossSales: number;
+  discounts: number;
+  refunds: number;
+  netSales: number;
+  costOfGoodsSold: number;
+  grossProfit: number;
+  grossMarginPercent: number;
+  operatingExpenses: number;
+  expensesByCategory: { category: string; categoryId: number; amount: number; percentOfTotal: number }[];
+  netProfit: number;
+  netMarginPercent: number;
+}
+
+export interface CashFlowReport {
+  from: string;
+  to: string;
+  cashSalesIn: number;
+  cardSalesIn: number;
+  otherSalesIn: number;
+  totalIn: number;
+  purchasesOut: number;
+  expensesOut: number;
+  refundsOut: number;
+  totalOut: number;
+  netCashFlow: number;
+  daily: { date: string; in: number; out: number; net: number }[];
+}
+
 export const ExpenseCategoryLabels: Record<number, string> = {
   1: "إيجار",
   2: "رواتب",

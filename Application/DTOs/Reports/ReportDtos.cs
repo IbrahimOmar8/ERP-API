@@ -28,6 +28,67 @@ namespace Application.DTOs.Reports
         public DateTime LastPurchase { get; set; }
     }
 
+    public class ProfitLossReportDto
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+
+        // Revenue
+        public decimal GrossSales { get; set; }
+        public decimal Discounts { get; set; }
+        public decimal Refunds { get; set; }
+        public decimal NetSales => GrossSales - Discounts - Refunds;
+
+        // Cost of goods sold
+        public decimal CostOfGoodsSold { get; set; }
+        public decimal GrossProfit => NetSales - CostOfGoodsSold;
+        public decimal GrossMarginPercent => NetSales == 0 ? 0 : Math.Round(GrossProfit / NetSales * 100, 2);
+
+        // Operating expenses
+        public decimal OperatingExpenses { get; set; }
+        public List<ExpenseLine> ExpensesByCategory { get; set; } = new();
+
+        // Net
+        public decimal NetProfit => GrossProfit - OperatingExpenses;
+        public decimal NetMarginPercent => NetSales == 0 ? 0 : Math.Round(NetProfit / NetSales * 100, 2);
+    }
+
+    public class ExpenseLine
+    {
+        public string Category { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public decimal Amount { get; set; }
+        public decimal PercentOfTotal { get; set; }
+    }
+
+    public class CashFlowReportDto
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+
+        public decimal CashSalesIn { get; set; }
+        public decimal CardSalesIn { get; set; }
+        public decimal OtherSalesIn { get; set; }
+        public decimal TotalIn => CashSalesIn + CardSalesIn + OtherSalesIn;
+
+        public decimal PurchasesOut { get; set; }
+        public decimal ExpensesOut { get; set; }
+        public decimal RefundsOut { get; set; }
+        public decimal TotalOut => PurchasesOut + ExpensesOut + RefundsOut;
+
+        public decimal NetCashFlow => TotalIn - TotalOut;
+
+        public List<CashFlowDailyRow> Daily { get; set; } = new();
+    }
+
+    public class CashFlowDailyRow
+    {
+        public DateTime Date { get; set; }
+        public decimal In { get; set; }
+        public decimal Out { get; set; }
+        public decimal Net => In - Out;
+    }
+
     public class SalesReportRow
     {
         public DateTime Date { get; set; }

@@ -28,6 +28,7 @@ import {
   X,
   TrendingDown,
   Upload,
+  Banknote,
 } from "lucide-react";
 
 type NavItem = {
@@ -51,6 +52,8 @@ const navItems: NavItem[] = [
   { href: "/stock-adjustment", label: "جرد المخزون", icon: ClipboardCheck },
   { href: "/transfers", label: "التحويلات", icon: ArrowLeftRight },
   { href: "/sales-report", label: "تقرير المبيعات", icon: TrendingUp },
+  { href: "/reports/pnl", label: "الأرباح والخسائر", icon: TrendingUp },
+  { href: "/reports/cash-flow", label: "التدفق النقدي", icon: Banknote },
   { href: "/master-data", label: "البيانات الأساسية", icon: Database },
   { href: "/import", label: "استيراد جماعي", icon: Upload },
   { href: "/cash-registers", label: "ماكينات الكاشير", icon: Terminal },
