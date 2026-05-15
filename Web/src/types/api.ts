@@ -185,6 +185,29 @@ export interface ProfitLossReport {
   netMarginPercent: number;
 }
 
+export interface InventoryAgingRow {
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  averageCost: number;
+  stockValue: number;
+  lastSoldAt?: string | null;
+  daysSinceLastSale: number;
+  bucket: number; // 0=0-30, 1=30-60, 2=60-90, 3=90-180, 4=180+/never
+}
+
+export interface CashierPerformanceRow {
+  cashierUserId: string;
+  cashierName: string;
+  invoiceCount: number;
+  totalSales: number;
+  averageTicket: number;
+  refundCount: number;
+  refundsAmount: number;
+  netSales: number;
+}
+
 export interface CashFlowReport {
   from: string;
   to: string;

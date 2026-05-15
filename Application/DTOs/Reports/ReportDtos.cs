@@ -89,6 +89,31 @@ namespace Application.DTOs.Reports
         public decimal Net => In - Out;
     }
 
+    public class InventoryAgingRow
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public string Sku { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
+        public decimal AverageCost { get; set; }
+        public decimal StockValue { get; set; }
+        public DateTime? LastSoldAt { get; set; }
+        public int DaysSinceLastSale { get; set; } // -1 if never sold
+        public int Bucket { get; set; } // 0-30, 30-60, 60-90, 90-180, 180+
+    }
+
+    public class CashierPerformanceRow
+    {
+        public Guid CashierUserId { get; set; }
+        public string CashierName { get; set; } = string.Empty;
+        public int InvoiceCount { get; set; }
+        public decimal TotalSales { get; set; }
+        public decimal AverageTicket { get; set; }
+        public int RefundCount { get; set; }
+        public decimal RefundsAmount { get; set; }
+        public decimal NetSales => TotalSales - RefundsAmount;
+    }
+
     public class SalesReportRow
     {
         public DateTime Date { get; set; }

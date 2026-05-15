@@ -11,6 +11,8 @@ namespace Application.Inerfaces.Reports
         Task<IReadOnlyList<StockReportRow>> GetStockReportAsync(Guid? warehouseId, bool onlyLow, CancellationToken ct = default);
         Task<ProfitLossReportDto> GetProfitLossAsync(DateTime from, DateTime to, CancellationToken ct = default);
         Task<CashFlowReportDto> GetCashFlowAsync(DateTime from, DateTime to, CancellationToken ct = default);
+        Task<IReadOnlyList<InventoryAgingRow>> GetInventoryAgingAsync(int? bucketDays, CancellationToken ct = default);
+        Task<IReadOnlyList<CashierPerformanceRow>> GetCashierPerformanceAsync(DateTime from, DateTime to, CancellationToken ct = default);
         Task<CashSessionReportDto?> GetCashSessionReportAsync(Guid sessionId, CancellationToken ct = default);
     }
 }

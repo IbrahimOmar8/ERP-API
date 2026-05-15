@@ -35,6 +35,7 @@ import {
   ShieldCheck,
   Key,
   Webhook,
+  Hourglass,
 } from "lucide-react";
 
 type NavItem = {
@@ -61,6 +62,8 @@ const navItems: NavItem[] = [
   { href: "/sales-report", label: "تقرير المبيعات", icon: TrendingUp },
   { href: "/reports/pnl", label: "الأرباح والخسائر", icon: TrendingUp },
   { href: "/reports/cash-flow", label: "التدفق النقدي", icon: Banknote },
+  { href: "/reports/inventory-aging", label: "عمر المخزون", icon: Hourglass },
+  { href: "/reports/cashier-performance", label: "أداء الكاشيرين", icon: UserCog },
   { href: "/master-data", label: "البيانات الأساسية", icon: Database },
   { href: "/import", label: "استيراد جماعي", icon: Upload },
   { href: "/cash-registers", label: "ماكينات الكاشير", icon: Terminal },

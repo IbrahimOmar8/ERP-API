@@ -382,6 +382,141 @@ namespace Application.Services.Reports
             };
         }
 
+        public async Task<IReadOnlyList<InventoryAgingRow>> GetInventoryAgingAsync(int? bucketDays, CancellationToken ct = default)
+        {
+            // Aggregate stock per product (across warehouses) then attach the
+            // last sale date so we can bucket "days since last sale".
+            var stock = await _context.StockItems
+                .Include(s => s.Product)
+                .Where(s => s.Product != null
+                            && s.Product.IsActive
+                            && s.Product.TrackStock
+                            && s.Quantity > 0)
+                .GroupBy(s => new { s.ProductId, s.Product!.NameAr, s.Product.Sku })
+                .Select(g => new
+                {
+                    g.Key.ProductId,
+                    g.Key.NameAr,
+                    g.Key.Sku,
+                    Quantity = g.Sum(x => x.Quantity),
+                    AverageCost = g.Average(x => x.AverageCost),
+                })
+                .ToListAsync(ct);
+
+            var productIds = stock.Select(s => s.ProductId).ToList();
+            var lastSold = await _context.SaleItems
+                .Where(i => productIds.Contains(i.ProductId)
+                            && i.Sale != null
+                            && i.Sale.Status == SaleStatus.Completed)
+                .GroupBy(i => i.ProductId)
+                .Select(g => new { ProductId = g.Key, LastSoldAt = g.Max(x => x.Sale!.SaleDate) })
+                .ToDictionaryAsync(x => x.ProductId, x => x.LastSoldAt, ct);
+
+            var now = DateTime.UtcNow;
+            return stock.Select(s =>
+            {
+                lastSold.TryGetValue(s.ProductId, out var lastDate);
+                var days = lastDate == default ? -1 : (int)(now - lastDate).TotalDays;
+                var bucket = days switch
+                {
+                    -1 => 4,                          // never sold
+                    <= 30 => 0,
+                    <= 60 => 1,
+                    <= 90 => 2,
+                    <= 180 => 3,
+                    _ => 4,
+                };
+                return new InventoryAgingRow
+                {
+                    ProductId = s.ProductId,
+                    ProductName = s.NameAr,
+                    Sku = s.Sku,
+                    Quantity = s.Quantity,
+                    AverageCost = s.AverageCost,
+                    StockValue = s.Quantity * s.AverageCost,
+                    LastSoldAt = lastDate == default ? null : lastDate,
+                    DaysSinceLastSale = days,
+                    Bucket = bucket,
+                };
+            })
+            .Where(r => !bucketDays.HasValue
+                        || r.DaysSinceLastSale < 0
+                        || r.DaysSinceLastSale >= bucketDays.Value)
+            .OrderByDescending(r => r.DaysSinceLastSale)
+            .ToList();
+        }
+
+        public async Task<IReadOnlyList<CashierPerformanceRow>> GetCashierPerformanceAsync(DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            // Sales aggregates per cashier
+            var sales = await _context.Sales
+                .Where(s => s.Status == SaleStatus.Completed
+                            && s.SaleDate >= from && s.SaleDate < to)
+                .GroupBy(s => s.CashierUserId)
+                .Select(g => new
+                {
+                    CashierUserId = g.Key,
+                    InvoiceCount = g.Count(),
+                    TotalSales = g.Sum(x => x.Total),
+                })
+                .ToListAsync(ct);
+
+            // Refunds processed by each cashier
+            var refunds = await _context.SaleReturns
+                .Where(r => r.ProcessedByUserId != null
+                            && r.ReturnDate >= from && r.ReturnDate < to)
+                .GroupBy(r => r.ProcessedByUserId!.Value)
+                .Select(g => new
+                {
+                    CashierUserId = g.Key,
+                    RefundCount = g.Count(),
+                    RefundsAmount = g.Sum(x => x.Total),
+                })
+                .ToDictionaryAsync(x => x.CashierUserId, ct);
+
+            // Cashier names
+            var cashierIds = sales.Select(s => s.CashierUserId)
+                .Union(refunds.Keys)
+                .Distinct()
+                .ToList();
+            var names = await _context.Users
+                .Where(u => cashierIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FullName, u.UserName })
+                .ToDictionaryAsync(u => u.Id, u => string.IsNullOrEmpty(u.FullName) ? u.UserName : u.FullName, ct);
+
+            var rows = sales.Select(s =>
+            {
+                refunds.TryGetValue(s.CashierUserId, out var r);
+                names.TryGetValue(s.CashierUserId, out var name);
+                return new CashierPerformanceRow
+                {
+                    CashierUserId = s.CashierUserId,
+                    CashierName = name ?? "—",
+                    InvoiceCount = s.InvoiceCount,
+                    TotalSales = s.TotalSales,
+                    AverageTicket = s.InvoiceCount > 0 ? s.TotalSales / s.InvoiceCount : 0,
+                    RefundCount = r?.RefundCount ?? 0,
+                    RefundsAmount = r?.RefundsAmount ?? 0,
+                };
+            }).ToList();
+
+            // Cashiers who only had refunds (no sales) in the period
+            foreach (var (cashierId, r) in refunds)
+            {
+                if (rows.Any(x => x.CashierUserId == cashierId)) continue;
+                names.TryGetValue(cashierId, out var name);
+                rows.Add(new CashierPerformanceRow
+                {
+                    CashierUserId = cashierId,
+                    CashierName = name ?? "—",
+                    RefundCount = r.RefundCount,
+                    RefundsAmount = r.RefundsAmount,
+                });
+            }
+
+            return rows.OrderByDescending(r => r.TotalSales).ToList();
+        }
+
         private async Task<decimal> ComputeProfitAsync(DateTime from, DateTime to, CancellationToken ct)
         {
             return await _context.SaleItems

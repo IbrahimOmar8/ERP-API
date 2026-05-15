@@ -87,5 +87,22 @@ namespace ERPTask.Controllers
             var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
             return Ok(await _service.GetCashFlowAsync(fromU, toU, ct));
         }
+
+        [HttpGet("inventory-aging")]
+        public async Task<IActionResult> InventoryAging(
+            [FromQuery] int? bucketDays,
+            CancellationToken ct)
+            => Ok(await _service.GetInventoryAgingAsync(bucketDays, ct));
+
+        [HttpGet("cashier-performance")]
+        public async Task<IActionResult> CashierPerformance(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken ct)
+        {
+            var fromU = (from ?? DateTime.UtcNow.AddDays(-30)).ToUniversalTime();
+            var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
+            return Ok(await _service.GetCashierPerformanceAsync(fromU, toU, ct));
+        }
     }
 }
