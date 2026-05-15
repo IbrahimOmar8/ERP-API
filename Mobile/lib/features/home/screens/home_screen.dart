@@ -8,6 +8,7 @@ import '../../inventory/screens/products_screen.dart';
 import '../../inventory/screens/stock_screen.dart';
 import '../../inventory/screens/suppliers_screen.dart';
 import '../../inventory/screens/transfers_screen.dart';
+import '../../pos/screens/customers_screen.dart';
 import '../../pos/screens/pos_screen.dart';
 import '../../pos/screens/session_screen.dart';
 import '../../pos/screens/sales_history_screen.dart';
@@ -71,6 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           AppTheme.warn, const SessionScreen()),
                       _MenuItem(Icons.receipt_long, 'الفواتير',
                           AppTheme.primary, const SalesHistoryScreen()),
+                      _MenuItem(Icons.people, 'العملاء',
+                          const Color(0xFF7E57C2), const CustomersScreen()),
                     ]),
                     const SizedBox(height: 20),
                     _SectionTitle('المخازن', icon: Icons.inventory_2),
