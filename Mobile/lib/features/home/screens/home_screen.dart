@@ -12,6 +12,7 @@ import '../../pos/screens/customers_screen.dart';
 import '../../pos/screens/pos_screen.dart';
 import '../../pos/screens/session_screen.dart';
 import '../../pos/screens/sales_history_screen.dart';
+import '../../notifications/widgets/notifications_bell.dart';
 import '../../reports/models/dashboard_kpi.dart';
 import '../../reports/screens/dashboard_screen.dart';
 import '../../reports/screens/sales_report_screen.dart';
@@ -161,6 +162,7 @@ class _GradientHeader extends StatelessWidget {
                   ],
                 ),
               ),
+              const NotificationsBell(),
               Consumer<ThemeProvider>(
                 builder: (_, theme, __) => IconButton(
                   icon: Icon(theme.isDark ? Icons.light_mode : Icons.dark_mode,
