@@ -3,6 +3,7 @@ using Application.Inerfaces;
 using Application.Inerfaces.Accounting;
 using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
+using Application.Inerfaces.Import;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.POS;
 using Application.Inerfaces.Reports;
@@ -10,6 +11,7 @@ using Application.Services;
 using Application.Services.Accounting;
 using Application.Services.Auth;
 using Application.Services.Egypt;
+using Application.Services.Import;
 using Application.Services.Inventory;
 using Application.Services.POS;
 using Application.Services.Reports;
@@ -62,6 +64,9 @@ public static class ConfigureServices
 
         // Accounting
         services.AddScoped<IExpenseService, ExpenseService>();
+
+        // Import
+        services.AddScoped<IImportService, ImportService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

@@ -27,6 +27,7 @@ import {
   Menu,
   X,
   TrendingDown,
+  Upload,
 } from "lucide-react";
 
 type NavItem = {
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
   { href: "/transfers", label: "التحويلات", icon: ArrowLeftRight },
   { href: "/sales-report", label: "تقرير المبيعات", icon: TrendingUp },
   { href: "/master-data", label: "البيانات الأساسية", icon: Database },
+  { href: "/import", label: "استيراد جماعي", icon: Upload },
   { href: "/cash-registers", label: "ماكينات الكاشير", icon: Terminal },
   { href: "/users", label: "المستخدمون", icon: UserCog, requireRole: "Admin" },
   { href: "/audit-log", label: "سجل العمليات", icon: History, requireRole: "Admin" },
