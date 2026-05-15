@@ -31,6 +31,9 @@ namespace Domain.Models.POS
         public decimal Balance { get; set; }
         public decimal CreditLimit { get; set; }
 
+        // Loyalty
+        public int LoyaltyPoints { get; set; }
+
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

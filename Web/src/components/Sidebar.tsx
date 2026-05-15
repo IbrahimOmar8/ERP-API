@@ -29,6 +29,7 @@ import {
   TrendingDown,
   Upload,
   Banknote,
+  Ticket,
 } from "lucide-react";
 
 type NavItem = {
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
   { href: "/purchases", label: "فواتير الشراء", icon: FileText },
   { href: "/expenses", label: "المصروفات", icon: TrendingDown },
   { href: "/customers", label: "العملاء", icon: Users },
+  { href: "/coupons", label: "الكوبونات", icon: Ticket },
   { href: "/suppliers", label: "الموردون", icon: Truck },
   { href: "/products", label: "الأصناف", icon: Package },
   { href: "/stock", label: "الرصيد", icon: Warehouse },

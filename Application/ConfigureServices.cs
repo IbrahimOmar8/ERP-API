@@ -5,6 +5,7 @@ using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.Import;
 using Application.Inerfaces.Inventory;
+using Application.Inerfaces.Loyalty;
 using Application.Inerfaces.POS;
 using Application.Inerfaces.Reports;
 using Application.Services;
@@ -13,6 +14,7 @@ using Application.Services.Auth;
 using Application.Services.Egypt;
 using Application.Services.Import;
 using Application.Services.Inventory;
+using Application.Services.Loyalty;
 using Application.Services.POS;
 using Application.Services.Reports;
 using MediatR;
@@ -67,6 +69,10 @@ public static class ConfigureServices
 
         // Import
         services.AddScoped<IImportService, ImportService>();
+
+        // Loyalty / Coupons
+        services.AddScoped<ICouponService, CouponService>();
+        services.AddScoped<ILoyaltyService, LoyaltyService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

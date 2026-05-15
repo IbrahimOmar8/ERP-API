@@ -46,6 +46,15 @@ namespace Domain.Models.POS
         [StringLength(500)]
         public string? Notes { get; set; }
 
+        // Loyalty / coupon
+        public Guid? CouponId { get; set; }
+        [StringLength(50)]
+        public string? CouponCode { get; set; }
+        public decimal CouponDiscount { get; set; }
+        public int PointsEarned { get; set; }
+        public int PointsRedeemed { get; set; }
+        public decimal PointsValueApplied { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<SaleItem>? Items { get; set; }

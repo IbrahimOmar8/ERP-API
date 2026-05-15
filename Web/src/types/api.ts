@@ -199,6 +199,56 @@ export interface CashFlowReport {
   daily: { date: string; in: number; out: number; net: number }[];
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string | null;
+  type: number;
+  value: number;
+  minSubtotal: number;
+  maxDiscountAmount?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  maxUses?: number | null;
+  maxUsesPerCustomer?: number | null;
+  usageCount: number;
+  isActive: boolean;
+}
+
+export interface LoyaltySettings {
+  enabled: boolean;
+  pointValueEgp: number;
+  egpPerPointEarned: number;
+  minRedeemPoints: number;
+  maxRedeemPercent: number;
+}
+
+export interface LoyaltyTransaction {
+  id: string;
+  customerId: string;
+  type: number;
+  points: number;
+  balanceAfter: number;
+  saleId?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface CustomerLoyaltyStatus {
+  customerId: string;
+  customerName: string;
+  currentPoints: number;
+  pointsValue: number;
+  recentTransactions: LoyaltyTransaction[];
+}
+
+export const LoyaltyTxTypeLabels: Record<number, string> = {
+  1: "اكتساب",
+  2: "استبدال",
+  3: "تعديل يدوي",
+  4: "انتهاء صلاحية",
+};
+
 export const ExpenseCategoryLabels: Record<number, string> = {
   1: "إيجار",
   2: "رواتب",
