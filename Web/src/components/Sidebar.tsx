@@ -50,6 +50,7 @@ const navItems: NavItem[] = [
   { href: "/pos", label: "نقطة البيع", icon: ShoppingCart },
   { href: "/cash-sessions", label: "جلسات الكاش", icon: Wallet },
   { href: "/sales", label: "فواتير البيع", icon: Receipt },
+  { href: "/quotations", label: "عروض الأسعار", icon: FileText },
   { href: "/purchases", label: "فواتير الشراء", icon: FileText },
   { href: "/expenses", label: "المصروفات", icon: TrendingDown },
   { href: "/customers", label: "العملاء", icon: Users },

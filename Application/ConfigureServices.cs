@@ -58,6 +58,7 @@ public static class ConfigureServices
         services.AddScoped<ICashSessionService, CashSessionService>();
         services.AddScoped<ISaleService, SaleService>();
         services.AddScoped<IHeldOrderService, HeldOrderService>();
+        services.AddScoped<IQuotationService, QuotationService>();
 
         // Egypt - ETA e-invoicing
         services.AddHttpClient<IEtaTokenService, EtaTokenService>();

@@ -43,6 +43,8 @@ namespace Infrastructure.Data
         public DbSet<SaleReturn> SaleReturns { get; set; }
         public DbSet<SaleReturnItem> SaleReturnItems { get; set; }
         public DbSet<HeldOrder> HeldOrders { get; set; }
+        public DbSet<Quotation> Quotations { get; set; }
+        public DbSet<QuotationItem> QuotationItems { get; set; }
 
         // Egypt
         public DbSet<CompanyProfile> CompanyProfiles { get; set; }
@@ -220,6 +222,13 @@ namespace Infrastructure.Data
             // Integration
             modelBuilder.Entity<ApiKey>()
                 .HasIndex(k => k.KeyHash).IsUnique();
+
+            // Quotations
+            modelBuilder.Entity<Quotation>()
+                .HasIndex(q => q.QuotationNumber).IsUnique();
+            modelBuilder.Entity<Quotation>()
+                .HasMany(q => q.Items).WithOne(i => i.Quotation)
+                .HasForeignKey(i => i.QuotationId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -381,6 +381,63 @@ export interface EInvoiceSubmission {
   validatedAt?: string | null;
 }
 
+export interface QuotationItem {
+  id: string;
+  productId: string;
+  productNameSnapshot: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  discountPercent: number;
+  vatRate: number;
+  vatAmount: number;
+  lineSubTotal: number;
+  lineTotal: number;
+}
+
+export interface Quotation {
+  id: string;
+  quotationNumber: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerNameSnapshot?: string | null;
+  customerPhoneSnapshot?: string | null;
+  warehouseId?: string | null;
+  issueDate: string;
+  validUntil?: string | null;
+  subTotal: number;
+  discountAmount: number;
+  discountPercent: number;
+  vatAmount: number;
+  total: number;
+  status: number;
+  convertedSaleId?: string | null;
+  notes?: string | null;
+  terms?: string | null;
+  createdAt: string;
+  items: QuotationItem[];
+}
+
+export const QuotationStatusLabels: Record<number, string> = {
+  0: "مسودة",
+  1: "مُرسل",
+  2: "مقبول",
+  3: "مرفوض",
+  4: "منتهي",
+  5: "محوّل",
+  6: "ملغي",
+};
+
+export const QuotationStatusColors: Record<number, string> = {
+  0: "bg-slate-100 text-slate-800",
+  1: "bg-blue-100 text-blue-800",
+  2: "bg-emerald-100 text-emerald-800",
+  3: "bg-red-100 text-red-800",
+  4: "bg-amber-100 text-amber-800",
+  5: "bg-violet-100 text-violet-800",
+  6: "bg-slate-200 text-slate-600",
+};
+
 export const SaleStatus: Record<number, string> = {
   0: "مسودة",
   1: "مكتملة",
