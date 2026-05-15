@@ -197,7 +197,11 @@ export default function CustomersPage() {
             ) : (
               data?.map((c) => (
                 <tr key={c.id}>
-                  <td className="font-medium">{c.name}</td>
+                  <td className="font-medium">
+                    <a href={`/customers/${c.id}`} className="hover:text-brand hover:underline">
+                      {c.name}
+                    </a>
+                  </td>
                   <td>{c.phone}</td>
                   <td>{c.taxRegistrationNumber}</td>
                   <td>{c.isCompany ? "شركة" : "فرد"}</td>

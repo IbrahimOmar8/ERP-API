@@ -14,7 +14,7 @@ interface SearchHit {
 
 const typeMeta: Record<string, { label: string; icon: typeof Package; href: (id: string) => string }> = {
   product: { label: "صنف", icon: Package, href: () => "/products" },
-  customer: { label: "عميل", icon: User, href: () => "/customers" },
+  customer: { label: "عميل", icon: User, href: (id) => `/customers/${id}` },
   sale: { label: "فاتورة", icon: Receipt, href: (id) => `/sales/${id}` },
   supplier: { label: "مورد", icon: Truck, href: () => "/suppliers" },
 };
