@@ -202,7 +202,10 @@ export default function CustomersPage() {
                   <td>{c.taxRegistrationNumber}</td>
                   <td>{c.isCompany ? "شركة" : "فرد"}</td>
                   <td>{formatMoney(c.balance)}</td>
-                  <td>
+                  <td className="flex gap-1">
+                    <a href={`/customers/${c.id}/ledger`} className="btn-outline !px-2 !py-1 text-xs" title="كشف حساب">
+                      كشف
+                    </a>
                     <button onClick={() => edit(c)} className="btn-outline !px-2 !py-1 text-xs">
                       <Pencil size={14} /> تعديل
                     </button>

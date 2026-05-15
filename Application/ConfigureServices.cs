@@ -7,6 +7,7 @@ using Application.Inerfaces.Import;
 using Application.Inerfaces.Integration;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.Loyalty;
+using Application.Inerfaces.Payments;
 using Application.Inerfaces.POS;
 using Application.Inerfaces.Reports;
 using Application.Services;
@@ -17,6 +18,7 @@ using Application.Services.Import;
 using Application.Services.Integration;
 using Application.Services.Inventory;
 using Application.Services.Loyalty;
+using Application.Services.Payments;
 using Application.Services.POS;
 using Application.Services.Reports;
 using MediatR;
@@ -79,6 +81,10 @@ public static class ConfigureServices
         // Integration
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddHttpClient<IWebhookService, WebhookService>();
+
+        // Customer / Supplier payments
+        services.AddScoped<ICustomerPaymentService, CustomerPaymentService>();
+        services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

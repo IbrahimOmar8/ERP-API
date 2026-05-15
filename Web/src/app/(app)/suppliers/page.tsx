@@ -133,6 +133,7 @@ export default function SuppliersPage() {
                   <td>{s.taxRegistrationNumber}</td>
                   <td>{formatMoney(s.balance)}</td>
                   <td className="flex gap-1">
+                    <a href={`/suppliers/${s.id}/ledger`} className="btn-outline !px-2 !py-1 text-xs">كشف</a>
                     <button onClick={() => edit(s)} className="btn-outline !px-2 !py-1 text-xs">
                       <Pencil size={14} /> تعديل
                     </button>

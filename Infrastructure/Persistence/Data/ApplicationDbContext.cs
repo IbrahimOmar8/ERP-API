@@ -7,6 +7,7 @@ using Domain.Models.Auth;
 using Domain.Models.Accounting;
 using Domain.Models.Integration;
 using Domain.Models.Loyalty;
+using Domain.Models.Payments;
 
 namespace Infrastructure.Data
 {
@@ -58,6 +59,10 @@ namespace Infrastructure.Data
         public DbSet<ApiKey> ApiKeys { get; set; }
         public DbSet<WebhookSubscription> WebhookSubscriptions { get; set; }
         public DbSet<WebhookDelivery> WebhookDeliveries { get; set; }
+
+        // Payments (customer/supplier ledger)
+        public DbSet<CustomerPayment> CustomerPayments { get; set; }
+        public DbSet<SupplierPayment> SupplierPayments { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }
