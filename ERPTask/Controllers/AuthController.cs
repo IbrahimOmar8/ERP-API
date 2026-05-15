@@ -4,6 +4,7 @@ using Application.Inerfaces.Auth;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ERPTask.Controllers
 {
@@ -16,6 +17,7 @@ namespace ERPTask.Controllers
         public AuthController(IAuthService authService) => _authService = authService;
 
         [AllowAnonymous]
+        [EnableRateLimiting("auth-login")]
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
@@ -24,6 +26,7 @@ namespace ERPTask.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("auth-login")]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh(RefreshTokenRequestDto dto)
         {
