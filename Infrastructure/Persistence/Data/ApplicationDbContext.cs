@@ -4,6 +4,7 @@ using Domain.Models.Inventory;
 using Domain.Models.POS;
 using Domain.Models.Egypt;
 using Domain.Models.Auth;
+using Domain.Models.Accounting;
 
 namespace Infrastructure.Data
 {
@@ -42,6 +43,9 @@ namespace Infrastructure.Data
         public DbSet<CompanyProfile> CompanyProfiles { get; set; }
         public DbSet<TaxRate> TaxRates { get; set; }
         public DbSet<EInvoiceSubmission> EInvoiceSubmissions { get; set; }
+
+        // Accounting
+        public DbSet<Expense> Expenses { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }

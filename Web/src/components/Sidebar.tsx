@@ -26,6 +26,7 @@ import {
   History,
   Menu,
   X,
+  TrendingDown,
 } from "lucide-react";
 
 type NavItem = {
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { href: "/cash-sessions", label: "جلسات الكاش", icon: Wallet },
   { href: "/sales", label: "فواتير البيع", icon: Receipt },
   { href: "/purchases", label: "فواتير الشراء", icon: FileText },
+  { href: "/expenses", label: "المصروفات", icon: TrendingDown },
   { href: "/customers", label: "العملاء", icon: Users },
   { href: "/suppliers", label: "الموردون", icon: Truck },
   { href: "/products", label: "الأصناف", icon: Package },

@@ -1,11 +1,13 @@
 using System.Reflection;
 using Application.Inerfaces;
+using Application.Inerfaces.Accounting;
 using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.POS;
 using Application.Inerfaces.Reports;
 using Application.Services;
+using Application.Services.Accounting;
 using Application.Services.Auth;
 using Application.Services.Egypt;
 using Application.Services.Inventory;
@@ -57,6 +59,9 @@ public static class ConfigureServices
 
         // Reports
         services.AddScoped<IReportService, ReportService>();
+
+        // Accounting
+        services.AddScoped<IExpenseService, ExpenseService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

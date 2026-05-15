@@ -42,6 +42,18 @@ namespace ERPTask.Controllers
             return Ok(await _service.GetTopProductsAsync(fromU, toU, take, ct));
         }
 
+        [HttpGet("top-customers")]
+        public async Task<IActionResult> TopCustomers(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int take = 10,
+            CancellationToken ct = default)
+        {
+            var fromU = (from ?? DateTime.UtcNow.AddDays(-30)).ToUniversalTime();
+            var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
+            return Ok(await _service.GetTopCustomersAsync(fromU, toU, take, ct));
+        }
+
         [HttpGet("stock")]
         public async Task<IActionResult> Stock(
             [FromQuery] Guid? warehouseId,

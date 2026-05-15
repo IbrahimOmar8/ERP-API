@@ -32,14 +32,25 @@ namespace Application.Services.Reports
             var todayProfit = await ComputeProfitAsync(todayStart, now, ct);
             var monthProfit = await ComputeProfitAsync(monthStart, now, ct);
 
+            var todayExpenses = await _context.Expenses
+                .Where(e => e.ExpenseDate >= todayStart && e.ExpenseDate < now)
+                .SumAsync(e => (decimal?)e.Amount, ct) ?? 0m;
+            var monthExpenses = await _context.Expenses
+                .Where(e => e.ExpenseDate >= monthStart && e.ExpenseDate < now)
+                .SumAsync(e => (decimal?)e.Amount, ct) ?? 0m;
+
             return new DashboardKpiDto
             {
                 TodaySales = today.Sum(x => x.Total),
                 TodayInvoiceCount = today.Count,
                 TodayProfit = todayProfit,
+                TodayExpenses = todayExpenses,
+                TodayNetProfit = todayProfit - todayExpenses,
                 MonthSales = month.Sum(x => x.Total),
                 MonthInvoiceCount = month.Count,
                 MonthProfit = monthProfit,
+                MonthExpenses = monthExpenses,
+                MonthNetProfit = monthProfit - monthExpenses,
                 CustomerCount = await _context.Customers.CountAsync(c => c.IsActive, ct),
                 ProductCount = await _context.Products.CountAsync(p => p.IsActive, ct),
                 LowStockCount = await _context.StockItems
@@ -50,6 +61,27 @@ namespace Application.Services.Reports
                     .CountAsync(s => s.Status == CashSessionStatus.Open, ct),
                 TotalStockValue = await _context.StockItems.SumAsync(s => s.Quantity * s.AverageCost, ct)
             };
+        }
+
+        public async Task<IReadOnlyList<TopCustomerRow>> GetTopCustomersAsync(DateTime from, DateTime to, int take, CancellationToken ct = default)
+        {
+            return await _context.Sales
+                .Where(s => s.Status == SaleStatus.Completed
+                            && s.SaleDate >= from && s.SaleDate < to
+                            && s.CustomerId != null
+                            && s.Customer != null)
+                .GroupBy(s => new { s.CustomerId, s.Customer!.Name })
+                .Select(g => new TopCustomerRow
+                {
+                    CustomerId = g.Key.CustomerId!.Value,
+                    CustomerName = g.Key.Name,
+                    InvoiceCount = g.Count(),
+                    TotalSpent = g.Sum(s => s.Total),
+                    LastPurchase = g.Max(s => s.SaleDate),
+                })
+                .OrderByDescending(r => r.TotalSpent)
+                .Take(Math.Clamp(take, 1, 100))
+                .ToListAsync(ct);
         }
 
         public async Task<SalesReportDto> GetSalesReportAsync(DateTime from, DateTime to, Guid? warehouseId, CancellationToken ct = default)

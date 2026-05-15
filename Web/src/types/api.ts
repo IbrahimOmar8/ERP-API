@@ -125,15 +125,61 @@ export interface DashboardKpi {
   todaySales: number;
   todayInvoiceCount: number;
   todayProfit: number;
+  todayExpenses: number;
+  todayNetProfit: number;
   monthSales: number;
   monthInvoiceCount: number;
   monthProfit: number;
+  monthExpenses: number;
+  monthNetProfit: number;
   customerCount: number;
   productCount: number;
   lowStockCount: number;
   openSessionCount: number;
   totalStockValue: number;
 }
+
+export interface TopCustomer {
+  customerId: string;
+  customerName: string;
+  invoiceCount: number;
+  totalSpent: number;
+  lastPurchase: string;
+}
+
+export interface Expense {
+  id: string;
+  title: string;
+  category: number;
+  amount: number;
+  expenseDate: string;
+  paymentMethod: number;
+  reference?: string | null;
+  notes?: string | null;
+  cashSessionId?: string | null;
+  createdAt: string;
+}
+
+export interface ExpenseSummary {
+  from: string;
+  to: string;
+  total: number;
+  count: number;
+  byCategory: { category: number; total: number; count: number }[];
+}
+
+export const ExpenseCategoryLabels: Record<number, string> = {
+  1: "إيجار",
+  2: "رواتب",
+  3: "مرافق",
+  4: "صيانة",
+  5: "تسويق",
+  6: "مواصلات",
+  7: "مستلزمات",
+  8: "ضرائب ورسوم",
+  9: "عمولات بنكية",
+  99: "أخرى",
+};
 
 export interface SalesReportRow {
   date: string;
