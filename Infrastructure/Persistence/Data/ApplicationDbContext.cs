@@ -42,6 +42,7 @@ namespace Infrastructure.Data
         public DbSet<SalePayment> SalePayments { get; set; }
         public DbSet<SaleReturn> SaleReturns { get; set; }
         public DbSet<SaleReturnItem> SaleReturnItems { get; set; }
+        public DbSet<HeldOrder> HeldOrders { get; set; }
 
         // Egypt
         public DbSet<CompanyProfile> CompanyProfiles { get; set; }

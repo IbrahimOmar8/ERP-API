@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Plus, Minus, Trash2, ShoppingBag } from "lucide-react";
+import { PauseCircle, Plus, Minus, RotateCcw, Trash2, ShoppingBag } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
@@ -55,6 +55,13 @@ export default function PosPage() {
     queryKey: ["loyalty-settings"],
     queryFn: async () =>
       (await api.get<{ enabled: boolean; pointValueEgp: number; minRedeemPoints: number; maxRedeemPercent: number }>("/Loyalty/settings")).data,
+  });
+
+  const heldOrders = useQuery({
+    queryKey: ["held-orders"],
+    queryFn: async () =>
+      (await api.get<{ id: string; label?: string | null; customerName?: string | null; itemCount: number; totalEstimate: number; createdAt: string }[]>("/held-orders")).data,
+    refetchInterval: 30_000,
   });
 
   const products = useQuery({
@@ -149,6 +156,59 @@ export default function PosPage() {
       }
     } catch {
       /* fall through to text-search filter */
+    }
+  }
+
+  async function holdOrder() {
+    if (!session.data || cart.length === 0) return;
+    try {
+      await api.post("/held-orders", {
+        cashSessionId: session.data.id,
+        customerId: customerId || null,
+        items: cart.map((l) => ({
+          productId: l.product.id,
+          productName: l.product.nameAr,
+          quantity: l.quantity,
+          unitPrice: l.product.salePrice,
+          discountAmount: 0,
+          discountPercent: 0,
+        })),
+      });
+      toast.success("تم تعليق الفاتورة");
+      setCart([]);
+      setDiscount(0);
+      setPaid("");
+      setAppliedCoupon(null);
+      setCouponCode("");
+      setPointsToRedeem(0);
+      heldOrders.refetch();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+  }
+
+  async function restoreHeldOrder(id: string) {
+    try {
+      const { data } = await api.get<{
+        customerId?: string | null;
+        items: { productId: string; quantity: number }[];
+      }>(`/held-orders/${id}`);
+      const newCart: CartLine[] = [];
+      for (const item of data.items) {
+        const product = products.data?.find((p) => p.id === item.productId);
+        if (product) newCart.push({ product, quantity: item.quantity });
+      }
+      if (newCart.length === 0) {
+        toast.error("لا توجد أصناف متاحة في هذه السلة");
+        return;
+      }
+      setCart(newCart);
+      if (data.customerId) setCustomerId(data.customerId);
+      await api.delete(`/held-orders/${id}`);
+      heldOrders.refetch();
+      toast.success("تم استعادة الفاتورة");
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
   }
 
@@ -253,6 +313,27 @@ export default function PosPage() {
 
         {/* Cart */}
         <div className="card flex flex-col overflow-hidden">
+          {heldOrders.data && heldOrders.data.length > 0 && (
+            <div className="mb-3 -mx-1 px-1 py-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+              <div className="text-xs font-medium text-amber-800 dark:text-amber-300 mb-1 flex items-center gap-1 px-2">
+                <PauseCircle size={14} /> فواتير معلّقة ({heldOrders.data.length})
+              </div>
+              <div className="flex gap-1 overflow-x-auto px-1 pb-1">
+                {heldOrders.data.map((h) => (
+                  <button
+                    key={h.id}
+                    onClick={() => restoreHeldOrder(h.id)}
+                    className="shrink-0 text-xs px-2 py-1.5 rounded bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 hover:border-amber-400 flex items-center gap-1 whitespace-nowrap"
+                    title={`${h.itemCount} صنف · ${formatMoney(h.totalEstimate)}`}
+                  >
+                    <RotateCcw size={12} />
+                    <span>{h.customerName ?? h.label ?? `#${h.id.slice(0, 4)}`}</span>
+                    <span className="text-slate-400">({formatMoney(h.totalEstimate)})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="mb-3">
             <option value="">عميل نقدي</option>
             {customers.data?.map((c) => (
@@ -412,13 +493,23 @@ export default function PosPage() {
                 className="w-32"
               />
             </div>
-            <button
-              onClick={submit}
-              disabled={cart.length === 0 || saving}
-              className="btn-success w-full !py-3 mt-2 text-base"
-            >
-              {saving ? "جاري الحفظ..." : `تسجيل البيع (${formatMoney(total)})`}
-            </button>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={submit}
+                disabled={cart.length === 0 || saving}
+                className="btn-success flex-1 !py-3 text-base"
+              >
+                {saving ? "جاري الحفظ..." : `تسجيل البيع (${formatMoney(total)})`}
+              </button>
+              <button
+                onClick={holdOrder}
+                disabled={cart.length === 0 || saving}
+                className="btn-outline !py-3"
+                title="تعليق الفاتورة"
+              >
+                <PauseCircle size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
