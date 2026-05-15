@@ -33,12 +33,28 @@ export default function PosPage() {
   const [paid, setPaid] = useState<number | "">("");
   const [paymentMethod, setPaymentMethod] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const session = useQuery({
     queryKey: ["current-session"],
     queryFn: async () =>
       (await api.get<CashSession | null>(`/CashSessions/current`)).data,
+  });
+
+  const loyaltyStatus = useQuery({
+    enabled: !!customerId,
+    queryKey: ["customer-loyalty", customerId],
+    queryFn: async () =>
+      (await api.get<{ currentPoints: number; pointsValue: number }>(`/Loyalty/customers/${customerId}`)).data,
+  });
+
+  const loyaltySettings = useQuery({
+    queryKey: ["loyalty-settings"],
+    queryFn: async () =>
+      (await api.get<{ enabled: boolean; pointValueEgp: number; minRedeemPoints: number; maxRedeemPercent: number }>("/Loyalty/settings")).data,
   });
 
   const products = useQuery({
@@ -69,7 +85,39 @@ export default function PosPage() {
     (s, l) => s + l.product.salePrice * l.quantity * (l.product.vatRate / 100),
     0
   );
-  const total = Math.max(0, subTotal + vat - discount);
+  const couponDiscount = appliedCoupon?.discount ?? 0;
+  const pointsValue = (loyaltySettings.data?.pointValueEgp ?? 0) * pointsToRedeem;
+  const total = Math.max(0, subTotal + vat - discount - couponDiscount - pointsValue);
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return;
+    try {
+      const { data } = await api.post<{ valid: boolean; error?: string; discountAmount: number }>(
+        "/Coupons/validate",
+        { code: couponCode.trim(), subtotal: subTotal - discount, customerId: customerId || null }
+      );
+      if (!data.valid) {
+        toast.error(data.error ?? "كوبون غير صالح");
+        return;
+      }
+      setAppliedCoupon({ code: couponCode.trim().toUpperCase(), discount: data.discountAmount });
+      toast.success(`خصم ${data.discountAmount.toFixed(2)} ج.م`);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+  }
+
+  function clearCoupon() {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  }
+
+  const maxRedeemable = (() => {
+    if (!loyaltyStatus.data || !loyaltySettings.data?.enabled) return 0;
+    const cap = ((subTotal + vat - discount - couponDiscount) * (loyaltySettings.data.maxRedeemPercent / 100))
+      / (loyaltySettings.data.pointValueEgp || 1);
+    return Math.min(loyaltyStatus.data.currentPoints, Math.floor(cap));
+  })();
 
   function add(p: Product) {
     setCart((c) => {
@@ -114,6 +162,8 @@ export default function PosPage() {
         cashSessionId: session.data.id,
         customerId: customerId || null,
         discountAmount: discount,
+        couponCode: appliedCoupon?.code ?? null,
+        pointsToRedeem: pointsToRedeem,
         items: cart.map((l) => ({
           productId: l.product.id,
           quantity: l.quantity,
@@ -127,6 +177,9 @@ export default function PosPage() {
       setDiscount(0);
       setPaid("");
       setCustomerId("");
+      setAppliedCoupon(null);
+      setCouponCode("");
+      setPointsToRedeem(0);
       router.push(`/sales/${data.id}`);
     } catch (err) {
       toast.error(errorMessage(err));
@@ -268,10 +321,59 @@ export default function PosPage() {
             )}
           </div>
 
+          {/* Coupon + Loyalty mini-panel */}
+          <div className="space-y-2 text-sm mb-2 border-t border-slate-200 dark:border-slate-700 pt-2">
+            {!appliedCoupon ? (
+              <div className="flex gap-1">
+                <input
+                  placeholder="كوبون خصم..."
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="font-mono !py-1 text-xs flex-1"
+                />
+                <button onClick={applyCoupon} className="btn-outline !px-2 !py-1 text-xs">
+                  تطبيق
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/30 rounded px-2 py-1">
+                <span className="text-xs text-emerald-700 dark:text-emerald-400">
+                  ✓ {appliedCoupon.code} (−{formatMoney(appliedCoupon.discount)})
+                </span>
+                <button onClick={clearCoupon} className="text-emerald-700 text-xs hover:underline">إزالة</button>
+              </div>
+            )}
+            {customerId && loyaltyStatus.data && loyaltySettings.data?.enabled && (
+              <div className="bg-violet-50 dark:bg-violet-950/30 rounded p-2">
+                <div className="flex justify-between text-xs">
+                  <span>نقاط العميل: <b>{loyaltyStatus.data.currentPoints}</b></span>
+                  <span>قيمتها: {formatMoney(loyaltyStatus.data.pointsValue)}</span>
+                </div>
+                {maxRedeemable >= (loyaltySettings.data.minRedeemPoints ?? 0) && (
+                  <div className="flex gap-1 mt-2 items-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxRedeemable}
+                      value={pointsToRedeem}
+                      onChange={(e) => setPointsToRedeem(Math.min(maxRedeemable, Math.max(0, Number(e.target.value))))}
+                      className="!py-1 text-xs flex-1"
+                      placeholder={`استبدل (حد ${maxRedeemable})`}
+                    />
+                    <button
+                      onClick={() => setPointsToRedeem(maxRedeemable)}
+                      className="btn-outline !px-2 !py-1 text-xs"
+                    >الكل</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1 text-sm">
             <Row label="المجموع" value={formatMoney(subTotal)} />
             <div className="flex justify-between items-center">
-              <span>خصم</span>
+              <span>خصم يدوي</span>
               <input
                 type="number"
                 value={discount}
@@ -279,6 +381,12 @@ export default function PosPage() {
                 className="w-28 text-end !py-1"
               />
             </div>
+            {couponDiscount > 0 && (
+              <Row label="خصم كوبون" value={`−${formatMoney(couponDiscount)}`} />
+            )}
+            {pointsValue > 0 && (
+              <Row label={`استبدال ${pointsToRedeem} نقطة`} value={`−${formatMoney(pointsValue)}`} />
+            )}
             <Row label="الضريبة" value={formatMoney(vat)} />
             <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
               <span>الإجمالي</span>

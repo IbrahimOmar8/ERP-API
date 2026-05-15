@@ -2,6 +2,7 @@ using Application.DTOs.POS;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.POS;
 using Domain.Enums;
+using Domain.Models.Loyalty;
 using Domain.Models.POS;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -148,10 +149,93 @@ namespace Application.Services.POS
             decimal invoiceDiscount = dto.DiscountAmount
                 + (subTotal * dto.DiscountPercent / 100m);
 
+            // Resolve coupon (if any). The coupon discounts against the
+            // post-line-discount subtotal so MinSubtotal etc. behave intuitively.
+            Coupon? coupon = null;
+            decimal couponDiscount = 0;
+            if (!string.IsNullOrWhiteSpace(dto.CouponCode))
+            {
+                var code = dto.CouponCode.Trim().ToUpperInvariant();
+                coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.Code == code);
+                if (coupon == null) throw new InvalidOperationException("الكوبون غير موجود");
+                if (!coupon.IsActive) throw new InvalidOperationException("الكوبون غير مفعّل");
+                var now = DateTime.UtcNow;
+                if (coupon.ValidFrom.HasValue && now < coupon.ValidFrom.Value)
+                    throw new InvalidOperationException("الكوبون لم يبدأ بعد");
+                if (coupon.ValidTo.HasValue && now > coupon.ValidTo.Value)
+                    throw new InvalidOperationException("انتهت صلاحية الكوبون");
+                if (coupon.MaxUses.HasValue && coupon.UsageCount >= coupon.MaxUses.Value)
+                    throw new InvalidOperationException("استُهلك الكوبون بالكامل");
+                var afterLineDiscounts = subTotal - sale.Items.Sum(i => i.DiscountAmount);
+                if (afterLineDiscounts < coupon.MinSubtotal)
+                    throw new InvalidOperationException(
+                        $"الحد الأدنى لاستخدام الكوبون: {coupon.MinSubtotal:N2}");
+                if (coupon.MaxUsesPerCustomer.HasValue && dto.CustomerId.HasValue)
+                {
+                    var prev = await _context.Sales
+                        .CountAsync(s => s.CouponId == coupon.Id && s.CustomerId == dto.CustomerId.Value);
+                    if (prev >= coupon.MaxUsesPerCustomer.Value)
+                        throw new InvalidOperationException("تجاوزت حد استخدام الكوبون لهذا العميل");
+                }
+                couponDiscount = coupon.Type == DiscountType.Percentage
+                    ? afterLineDiscounts * (coupon.Value / 100m)
+                    : coupon.Value;
+                if (coupon.MaxDiscountAmount.HasValue && couponDiscount > coupon.MaxDiscountAmount.Value)
+                    couponDiscount = coupon.MaxDiscountAmount.Value;
+                couponDiscount = Math.Min(couponDiscount, afterLineDiscounts);
+            }
+
+            // Loyalty: redeem points
+            decimal pointsValueApplied = 0;
+            int pointsRedeemed = 0;
+            LoyaltySettings? loyaltySettings = null;
+            Customer? customer = dto.CustomerId.HasValue
+                ? await _context.Customers.FindAsync(dto.CustomerId.Value)
+                : null;
+
+            if (dto.PointsToRedeem > 0)
+            {
+                if (customer == null)
+                    throw new InvalidOperationException("استبدال النقاط يتطلب عميلاً مسجلاً");
+                loyaltySettings = await _context.LoyaltySettings.FirstOrDefaultAsync()
+                                  ?? new LoyaltySettings();
+                if (!loyaltySettings.Enabled)
+                    throw new InvalidOperationException("برنامج الولاء غير مفعّل");
+                if (dto.PointsToRedeem > customer.LoyaltyPoints)
+                    throw new InvalidOperationException("رصيد النقاط غير كافٍ");
+                if (dto.PointsToRedeem < loyaltySettings.MinRedeemPoints)
+                    throw new InvalidOperationException(
+                        $"الحد الأدنى للاستبدال {loyaltySettings.MinRedeemPoints} نقطة");
+
+                pointsRedeemed = dto.PointsToRedeem;
+                pointsValueApplied = pointsRedeemed * loyaltySettings.PointValueEgp;
+                var afterAll = subTotal - sale.Items.Sum(i => i.DiscountAmount)
+                               - invoiceDiscount - couponDiscount;
+                var maxRedeemValue = afterAll * (loyaltySettings.MaxRedeemPercent / 100m);
+                if (pointsValueApplied > maxRedeemValue)
+                {
+                    pointsValueApplied = maxRedeemValue;
+                    pointsRedeemed = (int)Math.Floor(pointsValueApplied / loyaltySettings.PointValueEgp);
+                    pointsValueApplied = pointsRedeemed * loyaltySettings.PointValueEgp;
+                }
+            }
+
             sale.SubTotal = subTotal;
-            sale.DiscountAmount = invoiceDiscount + sale.Items.Sum(i => i.DiscountAmount);
+            sale.DiscountAmount = invoiceDiscount + sale.Items.Sum(i => i.DiscountAmount) + couponDiscount;
             sale.VatAmount = totalVat;
-            sale.Total = subTotal - invoiceDiscount - sale.Items.Sum(i => i.DiscountAmount) + totalVat;
+            sale.Total = Math.Max(0,
+                subTotal
+                - sale.Items.Sum(i => i.DiscountAmount)
+                - invoiceDiscount
+                - couponDiscount
+                + totalVat
+                - pointsValueApplied);
+
+            sale.CouponId = coupon?.Id;
+            sale.CouponCode = coupon?.Code;
+            sale.CouponDiscount = couponDiscount;
+            sale.PointsRedeemed = pointsRedeemed;
+            sale.PointsValueApplied = pointsValueApplied;
 
             // Payments
             foreach (var p in dto.Payments)
@@ -186,12 +270,62 @@ namespace Application.Services.POS
 
                 if (sale.CustomerId.HasValue && sale.PaidAmount < sale.Total)
                 {
-                    var customer = await _context.Customers.FindAsync(sale.CustomerId.Value);
-                    if (customer != null)
+                    var cu = await _context.Customers.FindAsync(sale.CustomerId.Value);
+                    if (cu != null)
                     {
-                        customer.Balance += (sale.Total - sale.PaidAmount);
+                        cu.Balance += (sale.Total - sale.PaidAmount);
                         await _context.SaveChangesAsync();
                     }
+                }
+
+                // Mark coupon as used (count is best-effort, not transactional)
+                if (coupon != null)
+                {
+                    coupon.UsageCount += 1;
+                    await _context.SaveChangesAsync();
+                }
+
+                // Loyalty: deduct redeemed points + earn new points
+                if (customer != null)
+                {
+                    if (pointsRedeemed > 0)
+                    {
+                        customer.LoyaltyPoints -= pointsRedeemed;
+                        _context.LoyaltyTransactions.Add(new LoyaltyTransaction
+                        {
+                            CustomerId = customer.Id,
+                            Type = LoyaltyTxType.Redeem,
+                            Points = -pointsRedeemed,
+                            BalanceAfter = customer.LoyaltyPoints,
+                            SaleId = sale.Id,
+                            Notes = $"خصم على فاتورة {sale.InvoiceNumber}",
+                            CreatedByUserId = cashierUserId,
+                        });
+                    }
+
+                    loyaltySettings ??= await _context.LoyaltySettings.FirstOrDefaultAsync();
+                    if (loyaltySettings is { Enabled: true } && loyaltySettings.EgpPerPointEarned > 0)
+                    {
+                        // Earn points on what the customer actually paid
+                        var spent = sale.Total;
+                        var earned = (int)Math.Floor(spent / loyaltySettings.EgpPerPointEarned);
+                        if (earned > 0)
+                        {
+                            customer.LoyaltyPoints += earned;
+                            sale.PointsEarned = earned;
+                            _context.LoyaltyTransactions.Add(new LoyaltyTransaction
+                            {
+                                CustomerId = customer.Id,
+                                Type = LoyaltyTxType.Earn,
+                                Points = earned,
+                                BalanceAfter = customer.LoyaltyPoints,
+                                SaleId = sale.Id,
+                                Notes = $"اكتساب من فاتورة {sale.InvoiceNumber}",
+                                CreatedByUserId = cashierUserId,
+                            });
+                        }
+                    }
+                    await _context.SaveChangesAsync();
                 }
 
                 await tx.CommitAsync();
@@ -316,6 +450,11 @@ namespace Application.Services.POS
             EInvoiceUuid = s.EInvoiceUuid,
             EInvoiceStatus = s.EInvoiceStatus,
             Notes = s.Notes,
+            CouponCode = s.CouponCode,
+            CouponDiscount = s.CouponDiscount,
+            PointsEarned = s.PointsEarned,
+            PointsRedeemed = s.PointsRedeemed,
+            PointsValueApplied = s.PointsValueApplied,
             Items = s.Items?.Select(i => new SaleItemDto
             {
                 Id = i.Id,

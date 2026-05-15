@@ -25,6 +25,11 @@ namespace Application.DTOs.POS
         public string? EInvoiceUuid { get; set; }
         public EInvoiceStatus? EInvoiceStatus { get; set; }
         public string? Notes { get; set; }
+        public string? CouponCode { get; set; }
+        public decimal CouponDiscount { get; set; }
+        public int PointsEarned { get; set; }
+        public int PointsRedeemed { get; set; }
+        public decimal PointsValueApplied { get; set; }
         public List<SaleItemDto> Items { get; set; } = new();
         public List<SalePaymentDto> Payments { get; set; } = new();
     }
@@ -64,6 +69,14 @@ namespace Application.DTOs.POS
         public decimal DiscountPercent { get; set; }
         [StringLength(500)]
         public string? Notes { get; set; }
+
+        // Optional coupon code to apply at checkout (validated server-side)
+        [StringLength(50)]
+        public string? CouponCode { get; set; }
+
+        // Loyalty points the customer wants to redeem against this invoice
+        public int PointsToRedeem { get; set; }
+
         [Required, MinLength(1)]
         public List<CreateSaleItemDto> Items { get; set; } = new();
         [Required, MinLength(1)]
