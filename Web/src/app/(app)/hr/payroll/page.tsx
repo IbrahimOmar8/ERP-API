@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Check, Download, Play, Trash2, Wallet } from "lucide-react";
+import { Check, Download, Play, Printer, Trash2, Wallet } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
@@ -17,6 +17,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 export default function PayrollPage() {
   const qc = useQueryClient();
   const { confirm, dialog } = useConfirm();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -161,6 +162,9 @@ export default function PayrollPage() {
                       }`}>{PayrollStatusLabel[p.status]}</span>
                     </td>
                     <td className="flex gap-1">
+                      <a href={`${apiUrl}/hr/payroll/${p.id}/print`} target="_blank" rel="noreferrer" className="btn-outline !px-2 !py-1 text-xs" title="قسيمة الراتب">
+                        <Printer size={14} />
+                      </a>
                       {p.status === 0 && (
                         <button onClick={() => setStatus.mutate({ id: p.id, action: "approve" })} className="btn-outline !px-2 !py-1 text-xs text-blue-700"><Check size={14} /> اعتماد</button>
                       )}

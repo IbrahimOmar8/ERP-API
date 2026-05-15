@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Application.DTOs.HR;
 using Application.Inerfaces.HR;
 using Domain.Enums;
+using ERPTask.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +14,12 @@ namespace ERPTask.Controllers.HR
     public class PayrollController : ControllerBase
     {
         private readonly IPayrollService _service;
-        public PayrollController(IPayrollService service) => _service = service;
+        private readonly PayslipPrintService _print;
+        public PayrollController(IPayrollService service, PayslipPrintService print)
+        {
+            _service = service;
+            _print = print;
+        }
 
         private Guid? CurrentUserId
         {
@@ -52,5 +58,13 @@ namespace ERPTask.Controllers.HR
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
             => await _service.DeleteAsync(id, ct) ? NoContent() : NotFound();
+
+        [HttpGet("{id}/print")]
+        [Produces("text/html")]
+        public async Task<IActionResult> Print(Guid id)
+        {
+            var html = await _print.RenderAsync(id);
+            return html is null ? NotFound() : Content(html, "text/html; charset=utf-8");
+        }
     }
 }

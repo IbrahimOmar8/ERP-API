@@ -273,7 +273,11 @@ export default function HrEmployeesPage() {
             ) : (
               data?.map((e) => (
                 <tr key={e.id}>
-                  <td className="font-medium">{e.name}</td>
+                  <td className="font-medium">
+                    <a href={`/hr/employees/${e.id}`} className="hover:text-brand hover:underline">
+                      {e.name}
+                    </a>
+                  </td>
                   <td>{e.departmentName ?? "—"}</td>
                   <td>{e.positionTitle ?? "—"}</td>
                   <td>{formatDate(e.hireDate)}</td>

@@ -19,6 +19,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddScoped<ERPTask.Services.InvoicePrintService>();
+builder.Services.AddScoped<ERPTask.Services.PayslipPrintService>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<Application.Inerfaces.Integration.IRealtimeBroadcaster, ERPTask.Services.RealtimeBroadcaster>();
 
