@@ -3,6 +3,7 @@ using Application.Inerfaces;
 using Application.Inerfaces.Accounting;
 using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
+using Application.Inerfaces.HR;
 using Application.Inerfaces.Import;
 using Application.Inerfaces.Integration;
 using Application.Inerfaces.Inventory;
@@ -15,6 +16,7 @@ using Application.Services;
 using Application.Services.Accounting;
 using Application.Services.Auth;
 using Application.Services.Egypt;
+using Application.Services.HR;
 using Application.Services.Import;
 using Application.Services.Integration;
 using Application.Services.Inventory;
@@ -41,6 +43,14 @@ public static class ConfigureServices
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<ILogHistoryService, LogHistoryService>();
+
+        // HR
+        services.AddScoped<IPositionService, PositionService>();
+        services.AddScoped<IEmployeeHrService, EmployeeHrService>();
+        services.AddScoped<IShiftService, ShiftService>();
+        services.AddScoped<IAttendanceService, AttendanceService>();
+        services.AddScoped<ILeaveRequestService, LeaveRequestService>();
+        services.AddScoped<IPayrollService, PayrollService>();
 
         // Inventory
         services.AddScoped<ICategoryService, CategoryService>();

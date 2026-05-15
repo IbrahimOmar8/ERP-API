@@ -5,6 +5,7 @@ using Domain.Models.POS;
 using Domain.Models.Egypt;
 using Domain.Models.Auth;
 using Domain.Models.Accounting;
+using Domain.Models.HR;
 using Domain.Models.Integration;
 using Domain.Models.Loyalty;
 using Domain.Models.Notifications;
@@ -70,6 +71,14 @@ namespace Infrastructure.Data
 
         // Notifications
         public DbSet<Notification> Notifications { get; set; }
+
+        // HR / Payroll
+        public DbSet<Position> Positions { get; set; }
+        public DbSet<Shift> Shifts { get; set; }
+        public DbSet<ShiftAssignment> ShiftAssignments { get; set; }
+        public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
+        public DbSet<LeaveRequest> LeaveRequests { get; set; }
+        public DbSet<Payroll> Payrolls { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }
@@ -229,6 +238,14 @@ namespace Infrastructure.Data
             modelBuilder.Entity<Quotation>()
                 .HasMany(q => q.Items).WithOne(i => i.Quotation)
                 .HasForeignKey(i => i.QuotationId).OnDelete(DeleteBehavior.Cascade);
+
+            // HR
+            modelBuilder.Entity<AttendanceRecord>()
+                .HasIndex(a => new { a.EmployeeId, a.Date }).IsUnique();
+            modelBuilder.Entity<Payroll>()
+                .HasIndex(p => new { p.EmployeeId, p.Year, p.Month }).IsUnique();
+            modelBuilder.Entity<ShiftAssignment>()
+                .HasIndex(a => new { a.EmployeeId, a.EffectiveFrom });
         }
     }
 }
