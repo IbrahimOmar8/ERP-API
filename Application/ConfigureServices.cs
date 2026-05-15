@@ -7,6 +7,7 @@ using Application.Inerfaces.Import;
 using Application.Inerfaces.Integration;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.Loyalty;
+using Application.Inerfaces.Notifications;
 using Application.Inerfaces.Payments;
 using Application.Inerfaces.POS;
 using Application.Inerfaces.Reports;
@@ -18,6 +19,7 @@ using Application.Services.Import;
 using Application.Services.Integration;
 using Application.Services.Inventory;
 using Application.Services.Loyalty;
+using Application.Services.Notifications;
 using Application.Services.Payments;
 using Application.Services.POS;
 using Application.Services.Reports;
@@ -85,6 +87,9 @@ public static class ConfigureServices
         // Customer / Supplier payments
         services.AddScoped<ICustomerPaymentService, CustomerPaymentService>();
         services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();
+
+        // Notifications (bell icon)
+        services.AddScoped<INotificationService, NotificationService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

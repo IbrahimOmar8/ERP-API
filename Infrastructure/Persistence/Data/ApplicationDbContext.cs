@@ -7,6 +7,7 @@ using Domain.Models.Auth;
 using Domain.Models.Accounting;
 using Domain.Models.Integration;
 using Domain.Models.Loyalty;
+using Domain.Models.Notifications;
 using Domain.Models.Payments;
 
 namespace Infrastructure.Data
@@ -63,6 +64,9 @@ namespace Infrastructure.Data
         // Payments (customer/supplier ledger)
         public DbSet<CustomerPayment> CustomerPayments { get; set; }
         public DbSet<SupplierPayment> SupplierPayments { get; set; }
+
+        // Notifications
+        public DbSet<Notification> Notifications { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }

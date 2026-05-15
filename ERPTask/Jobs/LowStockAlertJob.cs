@@ -1,3 +1,4 @@
+using Application.DTOs.Notifications;
 using Application.Inerfaces.Integration;
 using Application.Inerfaces.Notifications;
 using Domain.Models.Egypt;
@@ -13,17 +14,20 @@ namespace ERPTask.Jobs
         private readonly ApplicationDbContext _context;
         private readonly IWebhookService _webhooks;
         private readonly IEmailService _email;
+        private readonly INotificationService _notifications;
         private readonly ILogger<LowStockAlertJob> _logger;
 
         public LowStockAlertJob(
             ApplicationDbContext context,
             IWebhookService webhooks,
             IEmailService email,
+            INotificationService notifications,
             ILogger<LowStockAlertJob> logger)
         {
             _context = context;
             _webhooks = webhooks;
             _email = email;
+            _notifications = notifications;
             _logger = logger;
         }
 
@@ -52,6 +56,17 @@ namespace ERPTask.Jobs
 
             // Broadcast the summary
             await _webhooks.DispatchAsync("stock.low", new { count = low.Count, items = low }, ct);
+
+            // Persistent notification for managers/admins
+            await _notifications.CreateAsync(new CreateNotificationDto
+            {
+                Role = "Manager",
+                Title = "تنبيه نقص مخزون",
+                Message = $"يوجد {low.Count} صنف وصل أو تجاوز الحد الأدنى",
+                Type = "stock.low",
+                Link = "/stock",
+                Severity = "warning",
+            }, ct);
 
             // Email admins (skipped silently if no SMTP)
             var admins = await _context.Users

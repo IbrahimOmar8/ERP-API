@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import ThemeToggle from "./ThemeToggle";
 import GlobalSearch from "./GlobalSearch";
+import NotificationsBell from "./NotificationsBell";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -97,13 +98,16 @@ export default function Sidebar() {
             <div className="text-lg font-bold">ERP — نقاط البيع</div>
             <div className="text-xs text-slate-400 mt-1">إصدار 1.0</div>
           </div>
-          <button
-            className="lg:hidden text-slate-300 hover:text-white"
-            onClick={() => setOpen(false)}
-            aria-label="إغلاق القائمة"
-          >
-            <X size={22} />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
+            <button
+              className="lg:hidden text-slate-300 hover:text-white"
+              onClick={() => setOpen(false)}
+              aria-label="إغلاق القائمة"
+            >
+              <X size={22} />
+            </button>
+          </div>
         </div>
         <GlobalSearch />
       </div>
