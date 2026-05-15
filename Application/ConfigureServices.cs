@@ -4,6 +4,7 @@ using Application.Inerfaces.Accounting;
 using Application.Inerfaces.Auth;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.Import;
+using Application.Inerfaces.Integration;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.Loyalty;
 using Application.Inerfaces.POS;
@@ -13,6 +14,7 @@ using Application.Services.Accounting;
 using Application.Services.Auth;
 using Application.Services.Egypt;
 using Application.Services.Import;
+using Application.Services.Integration;
 using Application.Services.Inventory;
 using Application.Services.Loyalty;
 using Application.Services.POS;
@@ -73,6 +75,9 @@ public static class ConfigureServices
         // Loyalty / Coupons
         services.AddScoped<ICouponService, CouponService>();
         services.AddScoped<ILoyaltyService, LoyaltyService>();
+
+        // Integration
+        services.AddScoped<IApiKeyService, ApiKeyService>();
 
         // Auth
         services.AddSingleton<ITokenService, TokenService>();

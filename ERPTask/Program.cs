@@ -24,8 +24,13 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddAuthentication(options =>
+    {
+        // Pick scheme dynamically: X-API-Key header → ApiKey, else JWT
+        options.DefaultScheme = "JwtOrApiKey";
+        options.DefaultChallengeScheme = "JwtOrApiKey";
+    })
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -38,6 +43,15 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.FromMinutes(1)
         };
+    })
+    .AddScheme<ERPTask.Auth.ApiKeyAuthenticationOptions, ERPTask.Auth.ApiKeyAuthenticationHandler>(
+        ERPTask.Auth.ApiKeyAuthenticationOptions.Scheme, _ => { })
+    .AddPolicyScheme("JwtOrApiKey", "JwtOrApiKey", options =>
+    {
+        options.ForwardDefaultSelector = ctx =>
+            ctx.Request.Headers.ContainsKey("X-API-Key")
+                ? ERPTask.Auth.ApiKeyAuthenticationOptions.Scheme
+                : JwtBearerDefaults.AuthenticationScheme;
     });
 
 builder.Services.AddAuthorization();

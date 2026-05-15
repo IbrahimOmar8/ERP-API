@@ -5,6 +5,7 @@ using Domain.Models.POS;
 using Domain.Models.Egypt;
 using Domain.Models.Auth;
 using Domain.Models.Accounting;
+using Domain.Models.Integration;
 using Domain.Models.Loyalty;
 
 namespace Infrastructure.Data
@@ -52,6 +53,9 @@ namespace Infrastructure.Data
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
         public DbSet<LoyaltySettings> LoyaltySettings { get; set; }
+
+        // Integration
+        public DbSet<ApiKey> ApiKeys { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }
@@ -200,6 +204,10 @@ namespace Infrastructure.Data
                 .HasIndex(c => c.Code).IsUnique();
             modelBuilder.Entity<LoyaltyTransaction>()
                 .HasIndex(t => t.CustomerId);
+
+            // Integration
+            modelBuilder.Entity<ApiKey>()
+                .HasIndex(k => k.KeyHash).IsUnique();
         }
     }
 }
