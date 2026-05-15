@@ -1,5 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -19,6 +21,21 @@ builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddScoped<ERPTask.Services.InvoicePrintService>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<Application.Inerfaces.Integration.IRealtimeBroadcaster, ERPTask.Services.RealtimeBroadcaster>();
+
+// SMTP / email
+builder.Services.Configure<ERPTask.Services.SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<Application.Inerfaces.Notifications.IEmailService, ERPTask.Services.SmtpEmailService>();
+
+// Hangfire — in-memory storage (no external DB needed; survives until restart).
+// Switch to Hangfire.Storage.SQLite for persistence across restarts in production.
+builder.Services.AddHangfire(c => c
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseMemoryStorage());
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<ERPTask.Jobs.EtaRetryJob>();
+builder.Services.AddScoped<ERPTask.Jobs.LowStockAlertJob>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key not configured");
@@ -141,6 +158,11 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ERPTask.Hubs.EventsHub>("/hubs/events");
 
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new ERPTask.Auth.HangfireAdminAuthorization() },
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -148,5 +170,16 @@ using (var scope = app.Services.CreateScope())
     var defaultPassword = builder.Configuration["DefaultAdminPassword"] ?? "Admin@1234";
     await DbSeeder.SeedAsync(db, defaultPassword);
 }
+
+// Hangfire scheduled jobs
+RecurringJob.AddOrUpdate<ERPTask.Jobs.EtaRetryJob>(
+    "eta-retry",
+    j => j.RunAsync(CancellationToken.None),
+    "*/15 * * * *"); // every 15 minutes
+
+RecurringJob.AddOrUpdate<ERPTask.Jobs.LowStockAlertJob>(
+    "low-stock-alert",
+    j => j.RunAsync(CancellationToken.None),
+    "0 8 * * *"); // daily at 08:00 UTC
 
 app.Run();
