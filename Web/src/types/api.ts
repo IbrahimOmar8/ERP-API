@@ -76,6 +76,8 @@ export interface Sale {
   warehouseName?: string | null;
   cashSessionId: string;
   cashierUserId: string;
+  salesmanId?: string | null;
+  salesmanName?: string | null;
   saleDate: string;
   subTotal: number;
   discountAmount: number;
@@ -899,4 +901,136 @@ export const EmployeeLoanStatusLabel: Record<number, string> = {
   0: "نشطة",
   1: "مكتملة",
   2: "ملغاة",
+};
+
+// ─── Delivery ───────────────────────────────────────────────────────────
+
+export interface Driver {
+  id: string;
+  name: string;
+  phone?: string | null;
+  nationalId?: string | null;
+  vehicleType: number;
+  vehicleNumber?: string | null;
+  commissionPerDelivery: number;
+  isActive: boolean;
+  notes?: string | null;
+  activeOrders: number;
+  cashHeld: number;
+}
+
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  fee: number;
+  estimatedMinutes: number;
+  isActive: boolean;
+}
+
+export interface DeliveryOrder {
+  id: string;
+  orderNumber: string;
+  saleId?: string | null;
+  saleNumber?: string | null;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  address: string;
+  zoneId?: string | null;
+  zoneName?: string | null;
+  deliveryFee: number;
+  cashToCollect: number;
+  cashCollected: number;
+  driverId?: string | null;
+  driverName?: string | null;
+  status: number;
+  assignedAt?: string | null;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  cancelledAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface DriverReconciliationRow {
+  driverId: string;
+  driverName: string;
+  deliveredCount: number;
+  cashCollected: number;
+  commission: number;
+}
+
+export const DeliveryStatusLabel: Record<number, string> = {
+  0: "بانتظار",
+  1: "تم الإسناد",
+  2: "تم الاستلام",
+  3: "تم التسليم",
+  4: "ملغى",
+  5: "مرتجع",
+};
+
+export const VehicleTypeLabel: Record<number, string> = {
+  0: "موتوسيكل",
+  1: "سيارة",
+  2: "دراجة",
+  3: "مشي",
+  4: "أخرى",
+};
+
+// ─── Installments (بيع بالتقسيط) ────────────────────────────────────────
+
+export interface Installment {
+  id: string;
+  sequence: number;
+  dueDate: string;
+  amount: number;
+  amountPaid: number;
+  status: number;
+  paidAt?: string | null;
+  daysOverdue: number;
+}
+
+export interface InstallmentPlan {
+  id: string;
+  planNumber: string;
+  customerId: string;
+  customerName?: string | null;
+  saleId?: string | null;
+  saleNumber?: string | null;
+  totalAmount: number;
+  downPayment: number;
+  financedAmount: number;
+  installmentCount: number;
+  installmentAmount: number;
+  frequency: number;
+  startDate: string;
+  status: number;
+  notes?: string | null;
+  totalPaid: number;
+  remaining: number;
+  paidCount: number;
+  overdueCount: number;
+  nextDueDate?: string | null;
+  nextDueAmount?: number | null;
+  installments: Installment[];
+}
+
+export const InstallmentFrequencyLabel: Record<number, string> = {
+  0: "شهري",
+  1: "أسبوعي",
+  2: "كل أسبوعين",
+};
+
+export const InstallmentPlanStatusLabel: Record<number, string> = {
+  0: "نشطة",
+  1: "مكتملة",
+  2: "متعثرة",
+  3: "ملغاة",
+};
+
+export const InstallmentStatusLabel: Record<number, string> = {
+  0: "بانتظار",
+  1: "مسددة",
+  2: "متأخرة",
+  3: "ملغاة",
 };

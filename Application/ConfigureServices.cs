@@ -3,9 +3,11 @@ using Application.Inerfaces;
 using Application.Inerfaces.Accounting;
 using Application.Inerfaces.Auth;
 using Application.Inerfaces.Cheques;
+using Application.Inerfaces.Delivery;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.HR;
 using Application.Inerfaces.Import;
+using Application.Inerfaces.Installments;
 using Application.Inerfaces.Integration;
 using Application.Inerfaces.Inventory;
 using Application.Inerfaces.Loyalty;
@@ -18,7 +20,9 @@ using Application.Services;
 using Application.Services.Accounting;
 using Application.Services.Auth;
 using Application.Services.Cheques;
+using Application.Services.Delivery;
 using Application.Services.Egypt;
+using Application.Services.Installments;
 using Application.Services.HR;
 using Application.Services.Import;
 using Application.Services.Integration;
@@ -63,6 +67,14 @@ public static class ConfigureServices
 
         // Cheques
         services.AddScoped<IChequeService, ChequeService>();
+
+        // Delivery
+        services.AddScoped<IDriverService, DriverService>();
+        services.AddScoped<IDeliveryZoneService, DeliveryZoneService>();
+        services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
+
+        // Installments
+        services.AddScoped<IInstallmentService, InstallmentService>();
 
         // Inventory
         services.AddScoped<ICategoryService, CategoryService>();

@@ -40,6 +40,8 @@ import {
   Factory,
   CreditCard,
   Award,
+  Bike,
+  CalendarDays,
 } from "lucide-react";
 
 type NavItem = {
@@ -58,6 +60,8 @@ const navItems: NavItem[] = [
   { href: "/purchases", label: "فواتير الشراء", icon: FileText },
   { href: "/expenses", label: "المصروفات", icon: TrendingDown },
   { href: "/cheques", label: "الشيكات", icon: CreditCard },
+  { href: "/installments", label: "بيع بالتقسيط", icon: CalendarDays },
+  { href: "/delivery", label: "الديليفري", icon: Bike },
   { href: "/customers", label: "العملاء", icon: Users },
   { href: "/coupons", label: "الكوبونات", icon: Ticket },
   { href: "/suppliers", label: "الموردون", icon: Truck },

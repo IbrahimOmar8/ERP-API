@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Download, Eye, Printer, Receipt } from "lucide-react";
+import { Download, Eye, MessageCircle, Printer, Receipt } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatMoney, formatDateTime, formatDate } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
@@ -83,6 +83,18 @@ export default function SalesPage() {
                           className="btn !px-2 !py-1 text-xs"
                         >
                           <Printer size={14} /> طباعة
+                        </a>
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(
+                            `فاتورة رقم ${s.invoiceNumber}\nالإجمالي: ${s.total.toFixed(2)}\n${apiUrl}/sales/${s.id}/print?format=a4`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-outline !px-2 !py-1 text-xs"
+                          title="مشاركة على واتساب"
+                          style={{ color: "#25D366" }}
+                        >
+                          <MessageCircle size={14} />
                         </a>
                       </td>
                     </tr>

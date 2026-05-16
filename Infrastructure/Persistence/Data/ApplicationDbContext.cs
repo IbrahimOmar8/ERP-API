@@ -9,6 +9,8 @@ using Domain.Models.HR;
 using Domain.Models.Integration;
 using Domain.Models.Loyalty;
 using Domain.Models.Cheques;
+using Domain.Models.Delivery;
+using Domain.Models.Installments;
 using Domain.Models.Notifications;
 using Domain.Models.Payments;
 using Domain.Models.Production;
@@ -76,6 +78,15 @@ namespace Infrastructure.Data
 
         // Cheques
         public DbSet<Cheque> Cheques { get; set; }
+
+        // Delivery
+        public DbSet<Driver> Drivers { get; set; }
+        public DbSet<DeliveryZone> DeliveryZones { get; set; }
+        public DbSet<DeliveryOrder> DeliveryOrders { get; set; }
+
+        // Installments
+        public DbSet<InstallmentPlan> InstallmentPlans { get; set; }
+        public DbSet<Installment> Installments { get; set; }
 
         // Production
         public DbSet<BillOfMaterials> BillsOfMaterials { get; set; }
@@ -264,6 +275,21 @@ namespace Infrastructure.Data
                 .HasIndex(c => new { c.Type, c.Status });
             modelBuilder.Entity<Cheque>()
                 .HasIndex(c => c.DueDate);
+
+            // Delivery
+            modelBuilder.Entity<DeliveryOrder>()
+                .HasIndex(d => d.OrderNumber).IsUnique();
+            modelBuilder.Entity<DeliveryOrder>()
+                .HasIndex(d => new { d.DriverId, d.Status });
+
+            // Installments
+            modelBuilder.Entity<InstallmentPlan>()
+                .HasIndex(p => p.PlanNumber).IsUnique();
+            modelBuilder.Entity<InstallmentPlan>()
+                .HasMany(p => p.Installments).WithOne(i => i.Plan)
+                .HasForeignKey(i => i.PlanId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Installment>()
+                .HasIndex(i => new { i.PlanId, i.Sequence }).IsUnique();
 
             // Production
             modelBuilder.Entity<ProductionOrder>()
