@@ -14,8 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? "Data Source=erp.db"));
+    options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? "Server=localhost;Port=3306;Database=erp;User=root;Password=;"));
 
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddScoped<ERPTask.Services.InvoicePrintService>();

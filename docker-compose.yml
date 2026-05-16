@@ -1,4 +1,24 @@
 services:
+  db:
+    image: mysql:8.0
+    container_name: erp-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-changeme}
+      - MYSQL_DATABASE=${DB_NAME:-erp}
+      - MYSQL_USER=${DB_USER:-erp}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-changeme}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-changeme}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -9,15 +29,16 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Data Source=/data/erp.db
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=${DB_NAME:-erp};User=${DB_USER:-erp};Password=${DB_PASSWORD:-changeme};SslMode=Disabled;CharSet=utf8mb4;
       - Jwt__Key=${JWT_KEY:-CHANGE_ME_TO_A_VERY_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS_LONG_PLEASE}
       - Jwt__Issuer=ErpApi
       - Jwt__Audience=ErpClients
       - DefaultAdminPassword=${ADMIN_PASSWORD:-Admin@1234}
       - Cors__AllowedOrigins__0=http://localhost:3000
       - Cors__AllowedOrigins__1=${WEB_PUBLIC_URL:-http://localhost:3000}
-    volumes:
-      - api-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   web:
@@ -37,4 +58,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  api-data:
+  db-data:

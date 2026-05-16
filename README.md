@@ -4,11 +4,19 @@
 
 ## المكونات
 
-### 1. Backend (.NET 8 Clean Architecture)
+### 1. Backend (.NET 10 Clean Architecture)
 - **Domain** - النماذج والكيانات والـ Enums
 - **Application** - DTOs والخدمات وواجهات الأعمال
-- **Infrastructure** - EF Core (SQLite)، DbContext، Migrations
+- **Infrastructure** - EF Core 10 (MySQL)، DbContext، Migrations
 - **ERPTask** - مشروع API (Controllers + Swagger + JWT)
+
+#### إعداد قاعدة البيانات
+1. ثبّت MySQL 8.0+ وأنشئ قاعدة باسم `erp` بـ `utf8mb4`:
+   ```sql
+   CREATE DATABASE erp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+2. حدّث `ERPTask/appsettings.json` بمفتاح الاتصال (Server/Port/User/Password).
+3. عند أول تشغيل سيتم إنشاء الجداول تلقائياً عبر `EnsureCreated`.
 
 ### 2. Mobile (Flutter)
 تطبيق موبايل في مجلد `Mobile/` يدعم:
@@ -76,7 +84,7 @@
 cp .env.example .env   # غيّر JWT_KEY على الأقل
 docker compose up -d --build
 ```
-الـ API على `:5000`، الويب على `:3000`. قاعدة البيانات SQLite تُحفظ في volume باسم `api-data`.
+الـ API على `:5000`، الويب على `:3000`. قاعدة البيانات على خادم MySQL خارجي — مرّر `ConnectionStrings__DefaultConnection` بيئياً لـ docker compose.
 
 ### Backend (API) — تطوير محلي
 ```bash
@@ -152,7 +160,7 @@ CORS مضبوط للسماح فقط للنطاقات المحددة في `Cors:A
 
 ## التقنيات
 
-- 🔧 .NET 8 Web API + EF Core 8 + SQLite
+- 🔧 .NET 10 Web API + EF Core 10 + MySQL 8
 - 🌐 Next.js 14 + React 18 + TypeScript + Tailwind CSS + TanStack Query + Zustand
 - 📱 Flutter 3.19+ مع `pdf` + `printing` + `flutter_barcode_scanner`
 - 📊 AutoMapper, MediatR

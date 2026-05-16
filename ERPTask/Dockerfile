@@ -1,5 +1,5 @@
 # ─── build stage ─────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project files first for layer caching of `dotnet restore`
@@ -18,9 +18,14 @@ COPY ERPTask         ERPTask/
 RUN dotnet publish ERPTask/ERPTask.csproj -c Release -o /app /p:UseAppHost=false
 
 # ─── runtime stage ───────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app ./
+
+# mysqldump is needed by the BackupController to produce database backups
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends default-mysql-client \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_URLS=http://+:5000
 EXPOSE 5000

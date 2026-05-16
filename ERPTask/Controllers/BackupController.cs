@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MySql.Data.MySqlClient;
 
 namespace ERPTask.Controllers
 {
@@ -21,31 +23,52 @@ namespace ERPTask.Controllers
             _config = config;
         }
 
-        // Returns a copy of the SQLite database file as a download.
-        // Streamed via .backup so it's safe even with concurrent connections.
+        // Streams a logical mysqldump of the active database.
+        // Requires `mysqldump` to be present on the server's PATH.
         [HttpGet("download")]
-        public async Task<IActionResult> Download()
+        public async Task<IActionResult> Download(CancellationToken ct)
         {
-            var dbPath = ResolveDbPath();
-            if (string.IsNullOrEmpty(dbPath) || !System.IO.File.Exists(dbPath))
-                return NotFound(new { error = "ملف قاعدة البيانات غير موجود" });
+            if (!TryParseConnection(out var b, out var error))
+                return BadRequest(new { error });
 
-            var tempFile = Path.Combine(Path.GetTempPath(), $"erp-backup-{Guid.NewGuid():N}.db");
+            var tempFile = Path.Combine(Path.GetTempPath(), $"erp-backup-{Guid.NewGuid():N}.sql");
+            var psi = new ProcessStartInfo
+            {
+                FileName = "mysqldump",
+                RedirectStandardError = true,
+                RedirectStandardOutput = false,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            psi.ArgumentList.Add($"--host={b.Server}");
+            psi.ArgumentList.Add($"--port={b.Port}");
+            psi.ArgumentList.Add($"--user={b.UserID}");
+            psi.ArgumentList.Add("--single-transaction");
+            psi.ArgumentList.Add("--default-character-set=utf8mb4");
+            psi.ArgumentList.Add($"--result-file={tempFile}");
+            psi.ArgumentList.Add(b.Database);
+            // Avoid leaking the password on the command line; mysqldump reads $MYSQL_PWD.
+            psi.Environment["MYSQL_PWD"] = b.Password ?? string.Empty;
+
             try
             {
-                // Use SQLite's native backup so we don't corrupt an in-flight write
-                var conn = _context.Database.GetDbConnection();
-                await conn.OpenAsync();
-                using (var src = (Microsoft.Data.Sqlite.SqliteConnection)conn)
-                using (var dst = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={tempFile}"))
-                {
-                    await dst.OpenAsync();
-                    src.BackupDatabase(dst);
-                }
+                using var proc = Process.Start(psi)
+                    ?? throw new InvalidOperationException("تعذّر تشغيل mysqldump — تأكد من تثبيته في المسار");
+                var stderr = await proc.StandardError.ReadToEndAsync(ct);
+                await proc.WaitForExitAsync(ct);
+                if (proc.ExitCode != 0)
+                    return StatusCode(500, new { error = "فشل النسخ الاحتياطي", details = stderr });
 
-                var bytes = await System.IO.File.ReadAllBytesAsync(tempFile);
-                var filename = $"erp-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db";
-                return File(bytes, "application/octet-stream", filename);
+                var bytes = await System.IO.File.ReadAllBytesAsync(tempFile, ct);
+                var filename = $"erp-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.sql";
+                return File(bytes, "application/sql", filename);
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                return StatusCode(500, new
+                {
+                    error = "mysqldump غير موجود على الخادم. ثبّت أدوات MySQL أو استخدم نسخاً احتياطياً خارجياً."
+                });
             }
             finally
             {
@@ -55,32 +78,73 @@ namespace ERPTask.Controllers
         }
 
         [HttpGet("info")]
-        public IActionResult Info()
+        public async Task<IActionResult> Info(CancellationToken ct)
         {
-            var dbPath = ResolveDbPath();
-            if (string.IsNullOrEmpty(dbPath) || !System.IO.File.Exists(dbPath))
-                return Ok(new { exists = false });
+            if (!TryParseConnection(out var b, out var error))
+                return Ok(new { exists = false, error });
 
-            var fi = new FileInfo(dbPath);
-            return Ok(new
+            try
             {
-                exists = true,
-                sizeBytes = fi.Length,
-                lastModifiedUtc = fi.LastWriteTimeUtc,
-            });
+                // Aggregate size from INFORMATION_SCHEMA — gives us the data + index pages used.
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenAsync(ct);
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT
+                        IFNULL(SUM(data_length + index_length), 0) AS total_bytes,
+                        IFNULL(MAX(update_time), NOW()) AS last_updated
+                    FROM information_schema.tables
+                    WHERE table_schema = @schema";
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@schema";
+                p.Value = b.Database;
+                cmd.Parameters.Add(p);
+
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                if (!await reader.ReadAsync(ct))
+                    return Ok(new { exists = false });
+
+                var sizeBytes = reader.IsDBNull(0) ? 0L : Convert.ToInt64(reader.GetValue(0));
+                var lastUpdated = reader.IsDBNull(1) ? DateTime.UtcNow : reader.GetDateTime(1);
+                return Ok(new
+                {
+                    exists = true,
+                    database = b.Database,
+                    sizeBytes,
+                    lastModifiedUtc = DateTime.SpecifyKind(lastUpdated, DateTimeKind.Utc),
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { exists = false, error = ex.Message });
+            }
         }
 
-        private string? ResolveDbPath()
+        private bool TryParseConnection(out MySqlConnectionStringBuilder builder, out string? error)
         {
-            // Pull from "ConnectionStrings:DefaultConnection" — only Sqlite is supported.
-            var cs = _config.GetConnectionString("DefaultConnection") ?? "";
-            const string marker = "Data Source=";
-            var idx = cs.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0) return null;
-            var path = cs.Substring(idx + marker.Length);
-            var semi = path.IndexOf(';');
-            if (semi >= 0) path = path.Substring(0, semi);
-            return path.Trim();
+            builder = new MySqlConnectionStringBuilder();
+            var cs = _config.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(cs))
+            {
+                error = "ConnectionStrings:DefaultConnection غير معرّف";
+                return false;
+            }
+            try
+            {
+                builder.ConnectionString = cs;
+                if (string.IsNullOrEmpty(builder.Database))
+                {
+                    error = "اسم قاعدة البيانات غير محدد في ConnectionStrings";
+                    return false;
+                }
+                error = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
     }
 }
