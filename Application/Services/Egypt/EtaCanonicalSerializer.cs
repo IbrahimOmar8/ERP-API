@@ -15,10 +15,12 @@ namespace Application.Services.Egypt
     {
         public static string Serialize(object document)
         {
+            // Keep nulls — the ETA canonical form renders them as "" (handled in WriteValue).
+            // If we ignored them here the document hash would not match the one the
+            // tax authority computes against the same payload.
             var json = JsonSerializer.Serialize(document, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             });
             using var doc = JsonDocument.Parse(json);
             var sb = new StringBuilder();
