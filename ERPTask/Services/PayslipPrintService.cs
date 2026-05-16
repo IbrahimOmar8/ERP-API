@@ -33,7 +33,8 @@ namespace ERPTask.Services
         private static string Render(Payroll p, string? empName, string? nationalId, string? bank, string? account, CompanyProfile c)
         {
             var monthLabel = $"{MonthNamesAr[p.Month]} {p.Year}";
-            var totalDeductions = p.Deductions + p.LatePenalty + p.UnpaidLeavePenalty + p.Tax + p.InsuranceContribution;
+            var totalDeductions = p.Deductions + p.LatePenalty + p.UnpaidLeavePenalty
+                                  + p.LoanDeduction + p.Tax + p.InsuranceContribution;
 
             return $@"<!doctype html>
 <html dir='rtl' lang='ar'>
@@ -108,6 +109,7 @@ namespace ERPTask.Services
         <tr><td>الاستقطاعات الثابتة</td><td class='num'>{p.Deductions:F2}</td></tr>
         <tr><td>غرامة التأخير</td><td class='num'>{p.LatePenalty:F2}</td></tr>
         <tr><td>إجازات بدون أجر</td><td class='num'>{p.UnpaidLeavePenalty:F2}</td></tr>
+        <tr><td>قسط سلفة</td><td class='num'>{p.LoanDeduction:F2}</td></tr>
         <tr><td>الضريبة</td><td class='num'>{p.Tax:F2}</td></tr>
         <tr><td>التأمين الاجتماعي</td><td class='num'>{p.InsuranceContribution:F2}</td></tr>
         <tr class='grand'><td>إجمالي الخصومات</td><td class='num'>{totalDeductions:F2}</td></tr>

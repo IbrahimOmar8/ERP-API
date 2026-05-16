@@ -23,6 +23,9 @@ namespace Domain.Models.HR
         public decimal LatePenalty { get; set; }
         public decimal UnpaidLeavePenalty { get; set; }
 
+        // Installment amount auto-deducted from any active EmployeeLoan
+        public decimal LoanDeduction { get; set; }
+
         public decimal Bonus { get; set; }
         public decimal Tax { get; set; }
         public decimal InsuranceContribution { get; set; }

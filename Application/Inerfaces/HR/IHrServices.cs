@@ -62,4 +62,12 @@ namespace Application.Inerfaces.HR
         Task<PayrollDto?> SetStatusAsync(Guid id, PayrollStatus status, Guid? userId, CancellationToken ct = default);
         Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
     }
+
+    public interface IEmployeeLoanService
+    {
+        Task<List<EmployeeLoanDto>> GetAllAsync(Guid? employeeId, EmployeeLoanStatus? status, CancellationToken ct = default);
+        Task<EmployeeLoanDto> CreateAsync(CreateEmployeeLoanDto dto, Guid? userId, CancellationToken ct = default);
+        Task<EmployeeLoanDto?> CancelAsync(Guid id, CancellationToken ct = default);
+        Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
+    }
 }

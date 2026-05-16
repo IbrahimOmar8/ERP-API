@@ -38,6 +38,8 @@ import {
   Hourglass,
   UsersRound,
   Factory,
+  CreditCard,
+  Award,
 } from "lucide-react";
 
 type NavItem = {
@@ -55,6 +57,7 @@ const navItems: NavItem[] = [
   { href: "/quotations", label: "عروض الأسعار", icon: FileText },
   { href: "/purchases", label: "فواتير الشراء", icon: FileText },
   { href: "/expenses", label: "المصروفات", icon: TrendingDown },
+  { href: "/cheques", label: "الشيكات", icon: CreditCard },
   { href: "/customers", label: "العملاء", icon: Users },
   { href: "/coupons", label: "الكوبونات", icon: Ticket },
   { href: "/suppliers", label: "الموردون", icon: Truck },
@@ -68,6 +71,7 @@ const navItems: NavItem[] = [
   { href: "/reports/cash-flow", label: "التدفق النقدي", icon: Banknote },
   { href: "/reports/inventory-aging", label: "عمر المخزون", icon: Hourglass },
   { href: "/reports/cashier-performance", label: "أداء الكاشيرين", icon: UserCog },
+  { href: "/reports/salesman-commissions", label: "عمولات المندوبين", icon: Award },
   { href: "/hr", label: "الموارد البشرية", icon: UsersRound },
   { href: "/master-data", label: "البيانات الأساسية", icon: Database },
   { href: "/import", label: "استيراد جماعي", icon: Upload },

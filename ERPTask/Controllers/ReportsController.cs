@@ -104,5 +104,16 @@ namespace ERPTask.Controllers
             var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
             return Ok(await _service.GetCashierPerformanceAsync(fromU, toU, ct));
         }
+
+        [HttpGet("salesman-commissions")]
+        public async Task<IActionResult> SalesmanCommissions(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken ct)
+        {
+            var fromU = (from ?? DateTime.UtcNow.AddDays(-30)).ToUniversalTime();
+            var toU = (to ?? DateTime.UtcNow).ToUniversalTime();
+            return Ok(await _service.GetSalesmanCommissionsAsync(fromU, toU, ct));
+        }
     }
 }

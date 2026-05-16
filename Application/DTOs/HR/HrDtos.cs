@@ -48,6 +48,8 @@ namespace Application.DTOs.HR
         public decimal Allowances { get; set; }
         public decimal Deductions { get; set; }
         public decimal OvertimeHourlyRate { get; set; }
+        public bool IsSalesman { get; set; }
+        public decimal CommissionPercent { get; set; }
         public string? BankName { get; set; }
         public string? BankAccount { get; set; }
         public string? Notes { get; set; }
@@ -69,6 +71,8 @@ namespace Application.DTOs.HR
         public decimal Allowances { get; set; }
         public decimal Deductions { get; set; }
         public decimal OvertimeHourlyRate { get; set; }
+        public bool IsSalesman { get; set; }
+        [Range(0, 100)] public decimal CommissionPercent { get; set; }
         [StringLength(100)] public string? BankName { get; set; }
         [StringLength(50)] public string? BankAccount { get; set; }
         [StringLength(500)] public string? Notes { get; set; }
@@ -227,6 +231,7 @@ namespace Application.DTOs.HR
         public decimal OvertimePay { get; set; }
         public decimal LatePenalty { get; set; }
         public decimal UnpaidLeavePenalty { get; set; }
+        public decimal LoanDeduction { get; set; }
         public decimal Bonus { get; set; }
         public decimal Tax { get; set; }
         public decimal InsuranceContribution { get; set; }
@@ -252,5 +257,34 @@ namespace Application.DTOs.HR
         public decimal Tax { get; set; }
         public decimal InsuranceContribution { get; set; }
         public bool Overwrite { get; set; } = false; // overwrite existing draft for the period
+    }
+
+    // ─── Employee loans (سلف) ───────────────────────────────────────────
+
+    public class EmployeeLoanDto
+    {
+        public Guid Id { get; set; }
+        public Guid EmployeeId { get; set; }
+        public string? EmployeeName { get; set; }
+        public decimal Amount { get; set; }
+        public int Installments { get; set; }
+        public decimal MonthlyDeduction { get; set; }
+        public decimal AmountRepaid { get; set; }
+        public decimal Remaining { get; set; }
+        public DateTime IssueDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
+        public EmployeeLoanStatus Status { get; set; }
+        public string? Reason { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class CreateEmployeeLoanDto
+    {
+        [Required] public Guid EmployeeId { get; set; }
+        [Range(0.01, double.MaxValue)] public decimal Amount { get; set; }
+        [Range(1, 60)] public int Installments { get; set; } = 1;
+        public DateTime? IssueDate { get; set; }
+        [StringLength(500)] public string? Reason { get; set; }
+        [StringLength(500)] public string? Notes { get; set; }
     }
 }

@@ -13,6 +13,8 @@ namespace Application.DTOs.POS
         public string? WarehouseName { get; set; }
         public Guid CashSessionId { get; set; }
         public Guid CashierUserId { get; set; }
+        public Guid? SalesmanId { get; set; }
+        public string? SalesmanName { get; set; }
         public DateTime SaleDate { get; set; }
         public decimal SubTotal { get; set; }
         public decimal DiscountAmount { get; set; }
@@ -69,6 +71,9 @@ namespace Application.DTOs.POS
         public decimal DiscountPercent { get; set; }
         [StringLength(500)]
         public string? Notes { get; set; }
+
+        // Optional salesman credited for the sale (Employee.Id with IsSalesman=true)
+        public Guid? SalesmanId { get; set; }
 
         // Optional coupon code to apply at checkout (validated server-side)
         [StringLength(50)]

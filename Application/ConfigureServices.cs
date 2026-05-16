@@ -2,6 +2,7 @@ using System.Reflection;
 using Application.Inerfaces;
 using Application.Inerfaces.Accounting;
 using Application.Inerfaces.Auth;
+using Application.Inerfaces.Cheques;
 using Application.Inerfaces.Egypt;
 using Application.Inerfaces.HR;
 using Application.Inerfaces.Import;
@@ -16,6 +17,7 @@ using Application.Inerfaces.Reports;
 using Application.Services;
 using Application.Services.Accounting;
 using Application.Services.Auth;
+using Application.Services.Cheques;
 using Application.Services.Egypt;
 using Application.Services.HR;
 using Application.Services.Import;
@@ -53,10 +55,14 @@ public static class ConfigureServices
         services.AddScoped<IAttendanceService, AttendanceService>();
         services.AddScoped<ILeaveRequestService, LeaveRequestService>();
         services.AddScoped<IPayrollService, PayrollService>();
+        services.AddScoped<IEmployeeLoanService, EmployeeLoanService>();
 
         // Production
         services.AddScoped<IBomService, BomService>();
         services.AddScoped<IProductionOrderService, ProductionOrderService>();
+
+        // Cheques
+        services.AddScoped<IChequeService, ChequeService>();
 
         // Inventory
         services.AddScoped<ICategoryService, CategoryService>();

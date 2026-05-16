@@ -28,6 +28,8 @@ interface Form {
   allowances: number;
   deductions: number;
   overtimeHourlyRate: number;
+  isSalesman: boolean;
+  commissionPercent: number;
   bankName: string;
   bankAccount: string;
   notes: string;
@@ -38,6 +40,7 @@ const emptyForm: Form = {
   hireDate: new Date().toISOString().slice(0, 10),
   status: 0, departmentId: "", positionId: "",
   baseSalary: 0, allowances: 0, deductions: 0, overtimeHourlyRate: 0,
+  isSalesman: false, commissionPercent: 0,
   bankName: "", bankAccount: "", notes: "",
 };
 
@@ -117,6 +120,8 @@ export default function HrEmployeesPage() {
       allowances: e.allowances,
       deductions: e.deductions,
       overtimeHourlyRate: e.overtimeHourlyRate,
+      isSalesman: e.isSalesman,
+      commissionPercent: e.commissionPercent,
       bankName: e.bankName ?? "",
       bankAccount: e.bankAccount ?? "",
       notes: e.notes ?? "",
@@ -203,6 +208,14 @@ export default function HrEmployeesPage() {
             <div>
               <label>أجر الساعة الإضافية</label>
               <input type="number" value={form.overtimeHourlyRate} onChange={(e) => setForm({ ...form, overtimeHourlyRate: Number(e.target.value) })} />
+            </div>
+            <label className="flex items-center gap-2 mt-6">
+              <input type="checkbox" checked={form.isSalesman} onChange={(e) => setForm({ ...form, isSalesman: e.target.checked })} className="!w-auto" />
+              <span>مندوب مبيعات</span>
+            </label>
+            <div>
+              <label>نسبة العمولة %</label>
+              <input type="number" step="0.1" min="0" max="100" disabled={!form.isSalesman} value={form.commissionPercent} onChange={(e) => setForm({ ...form, commissionPercent: Number(e.target.value) })} />
             </div>
             <div>
               <label>البنك</label>

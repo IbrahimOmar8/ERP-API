@@ -8,6 +8,7 @@ namespace Domain.Enums
         MobileWallet = 4,
         BankTransfer = 5,
         Credit = 6,
-        Voucher = 7
+        Voucher = 7,
+        Cheque = 8
     }
 }

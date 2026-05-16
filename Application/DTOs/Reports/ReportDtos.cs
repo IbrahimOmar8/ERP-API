@@ -178,4 +178,14 @@ namespace Application.DTOs.Reports
         public decimal CardPayments { get; set; }
         public decimal OtherPayments { get; set; }
     }
+
+    public class SalesmanCommissionRow
+    {
+        public Guid SalesmanId { get; set; }
+        public string SalesmanName { get; set; } = string.Empty;
+        public int InvoiceCount { get; set; }
+        public decimal TotalSales { get; set; }
+        public decimal CommissionPercent { get; set; }
+        public decimal CommissionAmount { get; set; }
+    }
 }

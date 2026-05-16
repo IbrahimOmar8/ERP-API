@@ -49,6 +49,12 @@ namespace Domain.Models
         // Hourly rate for overtime — falls back to BaseSalary/working hours if 0
         public decimal OvertimeHourlyRate { get; set; }
 
+        // Salesman flag — when true the employee appears as a salesman choice on the POS
+        public bool IsSalesman { get; set; }
+
+        // Commission percent on net sale total (0–100). Used by the salesman commission report.
+        public decimal CommissionPercent { get; set; }
+
         [StringLength(100)]
         public string? BankName { get; set; }
 

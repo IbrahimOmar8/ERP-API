@@ -8,6 +8,7 @@ using Domain.Models.Accounting;
 using Domain.Models.HR;
 using Domain.Models.Integration;
 using Domain.Models.Loyalty;
+using Domain.Models.Cheques;
 using Domain.Models.Notifications;
 using Domain.Models.Payments;
 using Domain.Models.Production;
@@ -73,6 +74,9 @@ namespace Infrastructure.Data
         // Notifications
         public DbSet<Notification> Notifications { get; set; }
 
+        // Cheques
+        public DbSet<Cheque> Cheques { get; set; }
+
         // Production
         public DbSet<BillOfMaterials> BillsOfMaterials { get; set; }
         public DbSet<BomComponent> BomComponents { get; set; }
@@ -86,6 +90,7 @@ namespace Infrastructure.Data
         public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
         public DbSet<LeaveRequest> LeaveRequests { get; set; }
         public DbSet<Payroll> Payrolls { get; set; }
+        public DbSet<EmployeeLoan> EmployeeLoans { get; set; }
 
         // Auth
         public DbSet<User> Users { get; set; }
@@ -253,6 +258,12 @@ namespace Infrastructure.Data
                 .HasIndex(p => new { p.EmployeeId, p.Year, p.Month }).IsUnique();
             modelBuilder.Entity<ShiftAssignment>()
                 .HasIndex(a => new { a.EmployeeId, a.EffectiveFrom });
+
+            // Cheques
+            modelBuilder.Entity<Cheque>()
+                .HasIndex(c => new { c.Type, c.Status });
+            modelBuilder.Entity<Cheque>()
+                .HasIndex(c => c.DueDate);
 
             // Production
             modelBuilder.Entity<ProductionOrder>()

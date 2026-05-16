@@ -463,6 +463,7 @@ export const PaymentMethodLabels: Record<number, string> = {
   5: "تحويل بنكي",
   6: "آجل",
   7: "قسيمة",
+  8: "شيك",
 };
 
 export interface Category {
@@ -611,6 +612,8 @@ export interface HrEmployee {
   allowances: number;
   deductions: number;
   overtimeHourlyRate: number;
+  isSalesman: boolean;
+  commissionPercent: number;
   bankName?: string | null;
   bankAccount?: string | null;
   notes?: string | null;
@@ -729,6 +732,7 @@ export interface Payroll {
   bonus: number;
   tax: number;
   insuranceContribution: number;
+  loanDeduction: number;
   workingDays: number;
   absentDays: number;
   overtimeHours: number;
@@ -806,4 +810,93 @@ export const ProductionOrderStatusLabel: Record<number, string> = {
   1: "قيد التنفيذ",
   2: "مكتمل",
   3: "ملغى",
+};
+
+// ─── Cheques ────────────────────────────────────────────────────────────
+
+export interface Cheque {
+  id: string;
+  chequeNumber: string;
+  bankName: string;
+  branchName?: string | null;
+  accountHolderName?: string | null;
+  amount: number;
+  issueDate: string;
+  dueDate: string;
+  type: number;
+  status: number;
+  customerId?: string | null;
+  customerName?: string | null;
+  supplierId?: string | null;
+  supplierName?: string | null;
+  saleId?: string | null;
+  saleNumber?: string | null;
+  purchaseInvoiceId?: string | null;
+  purchaseNumber?: string | null;
+  depositedAt?: string | null;
+  clearedAt?: string | null;
+  bouncedAt?: string | null;
+  bounceReason?: string | null;
+  notes?: string | null;
+  linkedPaymentId?: string | null;
+  daysToDue: number;
+}
+
+export interface ChequeStats {
+  incomingPending: number;
+  incomingPendingAmount: number;
+  outgoingPending: number;
+  outgoingPendingAmount: number;
+  dueSoon: number;
+  overdue: number;
+  bouncedThisMonth: number;
+}
+
+export const ChequeTypeLabel: Record<number, string> = {
+  1: "وارد",
+  2: "صادر",
+};
+
+export const ChequeStatusLabel: Record<number, string> = {
+  0: "بانتظار",
+  1: "مودع",
+  2: "تم تحصيله",
+  3: "مرتد",
+  4: "مسترد",
+  5: "ملغى",
+};
+
+// ─── Salesman commission report ─────────────────────────────────────────
+
+export interface SalesmanCommissionRow {
+  salesmanId: string;
+  salesmanName: string;
+  invoiceCount: number;
+  totalSales: number;
+  commissionPercent: number;
+  commissionAmount: number;
+}
+
+// ─── Employee loans (سلف) ───────────────────────────────────────────────
+
+export interface EmployeeLoan {
+  id: string;
+  employeeId: string;
+  employeeName?: string | null;
+  amount: number;
+  installments: number;
+  monthlyDeduction: number;
+  amountRepaid: number;
+  remaining: number;
+  issueDate: string;
+  completedDate?: string | null;
+  status: number;
+  reason?: string | null;
+  notes?: string | null;
+}
+
+export const EmployeeLoanStatusLabel: Record<number, string> = {
+  0: "نشطة",
+  1: "مكتملة",
+  2: "ملغاة",
 };

@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   CalendarOff,
   Wallet,
+  HandCoins,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { HrEmployee, LeaveRequest, Payroll } from "@/types/api";
@@ -21,6 +22,7 @@ const sections = [
   { href: "/hr/attendance", label: "الحضور والانصراف", icon: CalendarCheck, desc: "تسجيل الحضور وحساب التأخير والإضافي", color: "bg-emerald-50 text-emerald-700" },
   { href: "/hr/leaves", label: "الإجازات", icon: CalendarOff, desc: "طلبات الإجازة والموافقة عليها", color: "bg-rose-50 text-rose-700" },
   { href: "/hr/payroll", label: "الرواتب", icon: Wallet, desc: "احتساب الرواتب الشهرية والاعتماد", color: "bg-teal-50 text-teal-700" },
+  { href: "/hr/loans", label: "السلف", icon: HandCoins, desc: "سلف الموظفين والخصم التلقائي من الراتب", color: "bg-orange-50 text-orange-700" },
 ];
 
 export default function HrHomePage() {

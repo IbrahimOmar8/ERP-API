@@ -23,6 +23,9 @@ namespace Domain.Models.POS
 
         public Guid CashierUserId { get; set; }
 
+        // Optional salesman (Employee.Id) credited for the sale. Used to calculate commissions.
+        public Guid? SalesmanId { get; set; }
+
         public DateTime SaleDate { get; set; } = DateTime.UtcNow;
 
         public decimal SubTotal { get; set; }

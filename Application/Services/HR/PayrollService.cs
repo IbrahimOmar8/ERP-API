@@ -76,6 +76,25 @@ namespace Application.Services.HR
                                 && l.From < monthEnd && l.To >= monthStart)
                     .SumAsync(l => (decimal?)l.Days, ct) ?? 0m;
 
+                // Active employee loans — collect this month's installment, capped at remaining balance
+                var activeLoans = await _context.EmployeeLoans
+                    .Where(l => l.EmployeeId == emp.Id && l.Status == EmployeeLoanStatus.Active)
+                    .ToListAsync(ct);
+                decimal loanDeduction = 0;
+                foreach (var l in activeLoans)
+                {
+                    var remaining = l.Amount - l.AmountRepaid;
+                    if (remaining <= 0) continue;
+                    var take = Math.Min(l.MonthlyDeduction, remaining);
+                    loanDeduction += take;
+                    l.AmountRepaid += take;
+                    if (l.AmountRepaid >= l.Amount)
+                    {
+                        l.Status = EmployeeLoanStatus.Completed;
+                        l.CompletedDate = DateTime.UtcNow;
+                    }
+                }
+
                 // Calculations
                 var dailyRate = workingDaysInMonth > 0 ? emp.BaseSalary / workingDaysInMonth : 0;
                 var hourlyRate = emp.OvertimeHourlyRate > 0
@@ -93,7 +112,7 @@ namespace Application.Services.HR
 
                 var gross = emp.BaseSalary + emp.Allowances + overtimePay + dto.Bonus;
                 var totalDeductions = emp.Deductions + latePenalty + unpaidPenalty + absencePenalty
-                                      + dto.Tax + dto.InsuranceContribution;
+                                      + dto.Tax + dto.InsuranceContribution + loanDeduction;
                 var net = gross - totalDeductions;
 
                 var payroll = new Payroll
@@ -107,6 +126,7 @@ namespace Application.Services.HR
                     OvertimePay = overtimePay,
                     LatePenalty = latePenalty,
                     UnpaidLeavePenalty = unpaidPenalty,
+                    LoanDeduction = loanDeduction,
                     Bonus = dto.Bonus,
                     Tax = dto.Tax,
                     InsuranceContribution = dto.InsuranceContribution,
@@ -172,6 +192,7 @@ namespace Application.Services.HR
             Year = p.Year, Month = p.Month,
             BaseSalary = p.BaseSalary, Allowances = p.Allowances, Deductions = p.Deductions,
             OvertimePay = p.OvertimePay, LatePenalty = p.LatePenalty, UnpaidLeavePenalty = p.UnpaidLeavePenalty,
+            LoanDeduction = p.LoanDeduction,
             Bonus = p.Bonus, Tax = p.Tax, InsuranceContribution = p.InsuranceContribution,
             WorkingDays = p.WorkingDays, AbsentDays = p.AbsentDays,
             OvertimeHours = p.OvertimeHours, LateMinutes = p.LateMinutes,

@@ -48,6 +48,7 @@ namespace Application.Services.HR
                 DepartmentId = dto.DepartmentId, PositionId = dto.PositionId,
                 BaseSalary = dto.BaseSalary, Allowances = dto.Allowances, Deductions = dto.Deductions,
                 OvertimeHourlyRate = dto.OvertimeHourlyRate,
+                IsSalesman = dto.IsSalesman, CommissionPercent = dto.CommissionPercent,
                 BankName = dto.BankName, BankAccount = dto.BankAccount, Notes = dto.Notes,
             };
             _context.Employees.Add(e);
@@ -65,6 +66,7 @@ namespace Application.Services.HR
             e.DepartmentId = dto.DepartmentId; e.PositionId = dto.PositionId;
             e.BaseSalary = dto.BaseSalary; e.Allowances = dto.Allowances; e.Deductions = dto.Deductions;
             e.OvertimeHourlyRate = dto.OvertimeHourlyRate;
+            e.IsSalesman = dto.IsSalesman; e.CommissionPercent = dto.CommissionPercent;
             e.BankName = dto.BankName; e.BankAccount = dto.BankAccount; e.Notes = dto.Notes;
             e.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
@@ -98,6 +100,7 @@ namespace Application.Services.HR
             PositionId = e.PositionId, PositionTitle = pos,
             BaseSalary = e.BaseSalary, Allowances = e.Allowances, Deductions = e.Deductions,
             OvertimeHourlyRate = e.OvertimeHourlyRate,
+            IsSalesman = e.IsSalesman, CommissionPercent = e.CommissionPercent,
             BankName = e.BankName, BankAccount = e.BankAccount, Notes = e.Notes,
         };
     }

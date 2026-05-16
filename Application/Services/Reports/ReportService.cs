@@ -524,5 +524,46 @@ namespace Application.Services.Reports
                             && i.Sale.SaleDate >= from && i.Sale.SaleDate < to)
                 .SumAsync(i => (i.UnitPrice - i.UnitCost) * i.Quantity - i.DiscountAmount, ct);
         }
+
+        public async Task<IReadOnlyList<SalesmanCommissionRow>> GetSalesmanCommissionsAsync(DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            var grouped = await _context.Sales
+                .Where(s => s.Status == SaleStatus.Completed
+                            && s.SalesmanId != null
+                            && s.SaleDate >= from && s.SaleDate < to)
+                .GroupBy(s => s.SalesmanId!.Value)
+                .Select(g => new
+                {
+                    SalesmanId = g.Key,
+                    InvoiceCount = g.Count(),
+                    TotalSales = g.Sum(x => x.Total),
+                })
+                .ToListAsync(ct);
+
+            if (grouped.Count == 0) return new List<SalesmanCommissionRow>();
+
+            var ids = grouped.Select(x => x.SalesmanId).ToList();
+            var employees = await _context.Employees
+                .Where(e => ids.Contains(e.Id))
+                .Select(e => new { e.Id, e.Name, e.CommissionPercent })
+                .ToDictionaryAsync(e => e.Id, ct);
+
+            return grouped.Select(g =>
+            {
+                employees.TryGetValue(g.SalesmanId, out var emp);
+                var percent = emp?.CommissionPercent ?? 0;
+                return new SalesmanCommissionRow
+                {
+                    SalesmanId = g.SalesmanId,
+                    SalesmanName = emp?.Name ?? "—",
+                    InvoiceCount = g.InvoiceCount,
+                    TotalSales = g.TotalSales,
+                    CommissionPercent = percent,
+                    CommissionAmount = Math.Round(g.TotalSales * percent / 100m, 2),
+                };
+            })
+            .OrderByDescending(r => r.CommissionAmount)
+            .ToList();
+        }
     }
 }
