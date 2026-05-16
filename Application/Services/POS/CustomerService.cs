@@ -14,7 +14,7 @@ namespace Application.Services.POS
 
         public async Task<List<CustomerDto>> GetAllAsync(string? search)
         {
-            var query = _context.Customers.AsQueryable();
+            var query = _context.Customers.AsNoTracking().AsQueryable();
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();

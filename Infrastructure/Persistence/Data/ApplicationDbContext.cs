@@ -300,6 +300,45 @@ namespace Infrastructure.Data
             modelBuilder.Entity<ProductionOrder>()
                 .HasMany(p => p.Items).WithOne(i => i.ProductionOrder)
                 .HasForeignKey(i => i.ProductionOrderId).OnDelete(DeleteBehavior.Cascade);
+
+            // ─── Performance indexes ────────────────────────────────────
+            // Sales: filtered/sorted by date, status and cashier in every report.
+            // InvoiceNumber unique index already declared above.
+            modelBuilder.Entity<Sale>().HasIndex(s => s.SaleDate);
+            modelBuilder.Entity<Sale>().HasIndex(s => s.Status);
+            modelBuilder.Entity<Sale>().HasIndex(s => new { s.CashierUserId, s.SaleDate });
+            modelBuilder.Entity<Sale>().HasIndex(s => new { s.CustomerId, s.SaleDate });
+            modelBuilder.Entity<Sale>().HasIndex(s => s.SalesmanId);
+
+            // Stock movements are typically filtered by product+warehouse and by date.
+            modelBuilder.Entity<StockMovement>()
+                .HasIndex(m => new { m.ProductId, m.WarehouseId, m.MovementDate });
+            modelBuilder.Entity<StockMovement>().HasIndex(m => m.MovementDate);
+
+            // Product lookups (Sku unique index declared above)
+            modelBuilder.Entity<Product>().HasIndex(p => p.Barcode);
+            modelBuilder.Entity<Product>().HasIndex(p => p.NameAr);
+
+            // Customer / supplier lookups by phone (POS quick lookup)
+            modelBuilder.Entity<Customer>().HasIndex(c => c.Phone);
+            modelBuilder.Entity<Supplier>().HasIndex(s => s.Phone);
+
+            // Payment ledgers
+            modelBuilder.Entity<CustomerPayment>()
+                .HasIndex(p => new { p.CustomerId, p.PaymentDate });
+            modelBuilder.Entity<SupplierPayment>()
+                .HasIndex(p => new { p.SupplierId, p.PaymentDate });
+
+            // Notifications are read by recipient/unread frequently
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => new { n.UserId, n.IsRead });
+
+            // Expense reports
+            modelBuilder.Entity<Expense>().HasIndex(e => e.ExpenseDate);
+
+            // Hold orders shown per cashier
+            modelBuilder.Entity<HeldOrder>()
+                .HasIndex(h => new { h.CashierUserId, h.CreatedAt });
         }
     }
 }

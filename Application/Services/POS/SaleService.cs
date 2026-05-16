@@ -28,6 +28,7 @@ namespace Application.Services.POS
         public async Task<List<SaleDto>> GetAllAsync(SaleFilterDto filter)
         {
             var query = _context.Sales
+                .AsNoTracking()
                 .Include(s => s.Customer)
                 .Include(s => s.Warehouse)
                 .Include(s => s.Items)!.ThenInclude(i => i.Product)

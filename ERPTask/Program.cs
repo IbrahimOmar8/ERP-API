@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text;
 using System.Threading.RateLimiting;
 using Hangfire;
@@ -5,6 +6,7 @@ using Hangfire.MemoryStorage;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -12,8 +14,13 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>("database");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// Pooled DbContext: reuses the EF graph and command cache between requests.
+// Safe here because ApplicationDbContext holds no per-request state.
+builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
     options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Server=localhost;Port=3306;Database=erp;User=root;Password=;"));
 
@@ -144,6 +151,39 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .AllowAnyMethod()
     .AllowCredentials()));
 
+// Brotli + Gzip for JSON responses. The default response compression
+// excludes HTTPS unless EnableForHttps is set; we serve HTTPS in production.
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+    o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/javascript",
+        "text/css",
+        "text/html",
+        "image/svg+xml",
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+
+// In-memory cache for stable lookup data (categories, units, ...) — services
+// can resolve IMemoryCache and avoid hitting MySQL on every list call.
+builder.Services.AddMemoryCache();
+
+// Forwarded-Headers so we honour the load-balancer's X-Forwarded-For / Proto
+builder.Services.Configure<Microsoft.AspNetCore.HttpOverrides.ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders =
+        Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+        Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -151,7 +191,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseExceptionHandler();
+    app.UseHsts();
+}
 
+app.UseForwardedHeaders();
+app.UseResponseCompression();
 app.UseCors();
 app.UseStaticFiles(); // serves wwwroot/uploads/...
 app.UseRateLimiter();
@@ -159,6 +206,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ERPTask.Hubs.EventsHub>("/hubs/events");
+app.MapHealthChecks("/health");
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {

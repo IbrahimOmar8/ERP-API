@@ -16,6 +16,7 @@ namespace Application.Services.Inventory
         public async Task<List<StockItemDto>> GetStockByWarehouseAsync(Guid warehouseId)
         {
             return await _context.StockItems
+                .AsNoTracking()
                 .Include(s => s.Product)
                 .Include(s => s.Warehouse)
                 .Where(s => s.WarehouseId == warehouseId)
@@ -26,6 +27,7 @@ namespace Application.Services.Inventory
         public async Task<List<StockItemDto>> GetStockByProductAsync(Guid productId)
         {
             return await _context.StockItems
+                .AsNoTracking()
                 .Include(s => s.Product)
                 .Include(s => s.Warehouse)
                 .Where(s => s.ProductId == productId)
@@ -36,6 +38,7 @@ namespace Application.Services.Inventory
         public async Task<StockItemDto?> GetStockAsync(Guid productId, Guid warehouseId)
         {
             var item = await _context.StockItems
+                .AsNoTracking()
                 .Include(s => s.Product)
                 .Include(s => s.Warehouse)
                 .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId);
@@ -46,6 +49,7 @@ namespace Application.Services.Inventory
         public async Task<List<StockMovementDto>> GetMovementsAsync(Guid productId, Guid? warehouseId = null)
         {
             var query = _context.StockMovements
+                .AsNoTracking()
                 .Include(m => m.Product)
                 .Include(m => m.Warehouse)
                 .Where(m => m.ProductId == productId);

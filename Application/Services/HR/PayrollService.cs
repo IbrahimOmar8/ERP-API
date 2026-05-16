@@ -47,51 +47,80 @@ namespace Application.Services.HR
             var monthStart = new DateTime(dto.Year, dto.Month, 1);
             var monthEnd = monthStart.AddMonths(1);
             var workingDaysInMonth = CountBusinessDays(monthStart, monthEnd.AddDays(-1));
+            var employeeIds = employees.Select(e => e.Id).ToList();
+
+            // Batch-fetch related rows for the whole employee set in one round-trip each
+            // — replaces a (employees × 5-query) loop with five fixed queries.
+            var existingByEmployee = await _context.Payrolls
+                .Where(p => p.Year == dto.Year && p.Month == dto.Month && employeeIds.Contains(p.EmployeeId))
+                .ToDictionaryAsync(p => p.EmployeeId, ct);
+
+            var attendanceByEmployee = (await _context.AttendanceRecords
+                .Where(r => employeeIds.Contains(r.EmployeeId) && r.Date >= monthStart && r.Date < monthEnd)
+                .Select(r => new { r.EmployeeId, r.Status, r.OvertimeHours, r.LateMinutes })
+                .ToListAsync(ct))
+                .GroupBy(r => r.EmployeeId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var unpaidLeaveByEmployee = (await _context.LeaveRequests
+                .Where(l => employeeIds.Contains(l.EmployeeId)
+                            && l.Status == LeaveStatus.Approved
+                            && l.Type == LeaveType.Unpaid
+                            && l.From < monthEnd && l.To >= monthStart)
+                .Select(l => new { l.EmployeeId, l.Days })
+                .ToListAsync(ct))
+                .GroupBy(l => l.EmployeeId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.Days));
+
+            var loansByEmployee = (await _context.EmployeeLoans
+                .Where(l => employeeIds.Contains(l.EmployeeId) && l.Status == EmployeeLoanStatus.Active)
+                .ToListAsync(ct))
+                .GroupBy(l => l.EmployeeId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var shiftByEmployee = await _context.ShiftAssignments
+                .Where(a => employeeIds.Contains(a.EmployeeId)
+                            && a.EffectiveFrom <= monthStart
+                            && (a.EffectiveTo == null || a.EffectiveTo >= monthStart))
+                .OrderByDescending(a => a.EffectiveFrom)
+                .Join(_context.Shifts, a => a.ShiftId, s => s.Id, (a, s) => new { a.EmployeeId, Shift = s })
+                .ToListAsync(ct);
+            var shiftByEmployeeMap = shiftByEmployee
+                .GroupBy(x => x.EmployeeId)
+                .ToDictionary(g => g.Key, g => g.First().Shift);
 
             var generated = new List<Payroll>();
             foreach (var emp in employees)
             {
-                var existing = await _context.Payrolls
-                    .FirstOrDefaultAsync(p => p.EmployeeId == emp.Id && p.Year == dto.Year && p.Month == dto.Month, ct);
-                if (existing != null)
+                if (existingByEmployee.TryGetValue(emp.Id, out var existing))
                 {
                     if (!dto.Overwrite || existing.Status != PayrollStatus.Draft)
                         continue;
                     _context.Payrolls.Remove(existing);
                 }
 
-                // Pull attendance for the month
-                var attendance = await _context.AttendanceRecords
-                    .Where(r => r.EmployeeId == emp.Id && r.Date >= monthStart && r.Date < monthEnd)
-                    .ToListAsync(ct);
+                var attendance = attendanceByEmployee.TryGetValue(emp.Id, out var ar) ? ar : new();
                 var absent = attendance.Count(r => r.Status == AttendanceStatus.Absent);
                 var overtimeHours = attendance.Sum(r => r.OvertimeHours);
                 var lateMinutes = attendance.Sum(r => r.LateMinutes);
 
-                // Unpaid leaves in the month
-                var unpaidLeaveDays = await _context.LeaveRequests
-                    .Where(l => l.EmployeeId == emp.Id
-                                && l.Status == LeaveStatus.Approved
-                                && l.Type == LeaveType.Unpaid
-                                && l.From < monthEnd && l.To >= monthStart)
-                    .SumAsync(l => (decimal?)l.Days, ct) ?? 0m;
+                var unpaidLeaveDays = unpaidLeaveByEmployee.TryGetValue(emp.Id, out var ul) ? ul : 0m;
 
-                // Active employee loans — collect this month's installment, capped at remaining balance
-                var activeLoans = await _context.EmployeeLoans
-                    .Where(l => l.EmployeeId == emp.Id && l.Status == EmployeeLoanStatus.Active)
-                    .ToListAsync(ct);
                 decimal loanDeduction = 0;
-                foreach (var l in activeLoans)
+                if (loansByEmployee.TryGetValue(emp.Id, out var activeLoans))
                 {
-                    var remaining = l.Amount - l.AmountRepaid;
-                    if (remaining <= 0) continue;
-                    var take = Math.Min(l.MonthlyDeduction, remaining);
-                    loanDeduction += take;
-                    l.AmountRepaid += take;
-                    if (l.AmountRepaid >= l.Amount)
+                    foreach (var l in activeLoans)
                     {
-                        l.Status = EmployeeLoanStatus.Completed;
-                        l.CompletedDate = DateTime.UtcNow;
+                        var remaining = l.Amount - l.AmountRepaid;
+                        if (remaining <= 0) continue;
+                        var take = Math.Min(l.MonthlyDeduction, remaining);
+                        loanDeduction += take;
+                        l.AmountRepaid += take;
+                        if (l.AmountRepaid >= l.Amount)
+                        {
+                            l.Status = EmployeeLoanStatus.Completed;
+                            l.CompletedDate = DateTime.UtcNow;
+                        }
                     }
                 }
 
@@ -101,7 +130,7 @@ namespace Application.Services.HR
                     ? emp.OvertimeHourlyRate
                     : (workingDaysInMonth > 0 ? dailyRate / 8m : 0);
 
-                var assignedShift = await ShiftService.ResolveActiveShiftAsync(_context, emp.Id, monthStart, ct);
+                shiftByEmployeeMap.TryGetValue(emp.Id, out var assignedShift);
                 var otMultiplier = assignedShift?.OvertimeMultiplier ?? 1.5m;
                 var latePenaltyPerMin = assignedShift?.LatePenaltyPerMinute ?? 0m;
 
@@ -130,7 +159,7 @@ namespace Application.Services.HR
                     Bonus = dto.Bonus,
                     Tax = dto.Tax,
                     InsuranceContribution = dto.InsuranceContribution,
-                    WorkingDays = workingDaysInMonth - absent,
+                    WorkingDays = Math.Max(0, workingDaysInMonth - absent),
                     AbsentDays = absent,
                     OvertimeHours = overtimeHours,
                     LateMinutes = lateMinutes,

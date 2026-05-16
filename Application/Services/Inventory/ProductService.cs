@@ -15,6 +15,7 @@ namespace Application.Services.Inventory
         public async Task<List<ProductDto>> GetAllAsync(ProductFilterDto filter)
         {
             var query = _context.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Unit)
                 .AsQueryable();
