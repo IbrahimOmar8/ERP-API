@@ -10,6 +10,7 @@ using Domain.Models.Integration;
 using Domain.Models.Loyalty;
 using Domain.Models.Notifications;
 using Domain.Models.Payments;
+using Domain.Models.Production;
 
 namespace Infrastructure.Data
 {
@@ -71,6 +72,12 @@ namespace Infrastructure.Data
 
         // Notifications
         public DbSet<Notification> Notifications { get; set; }
+
+        // Production
+        public DbSet<BillOfMaterials> BillsOfMaterials { get; set; }
+        public DbSet<BomComponent> BomComponents { get; set; }
+        public DbSet<ProductionOrder> ProductionOrders { get; set; }
+        public DbSet<ProductionOrderItem> ProductionOrderItems { get; set; }
 
         // HR / Payroll
         public DbSet<Position> Positions { get; set; }
@@ -246,6 +253,16 @@ namespace Infrastructure.Data
                 .HasIndex(p => new { p.EmployeeId, p.Year, p.Month }).IsUnique();
             modelBuilder.Entity<ShiftAssignment>()
                 .HasIndex(a => new { a.EmployeeId, a.EffectiveFrom });
+
+            // Production
+            modelBuilder.Entity<ProductionOrder>()
+                .HasIndex(p => p.OrderNumber).IsUnique();
+            modelBuilder.Entity<BillOfMaterials>()
+                .HasMany(b => b.Components).WithOne(c => c.BillOfMaterials)
+                .HasForeignKey(c => c.BillOfMaterialsId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ProductionOrder>()
+                .HasMany(p => p.Items).WithOne(i => i.ProductionOrder)
+                .HasForeignKey(i => i.ProductionOrderId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -561,6 +561,8 @@ export const MovementTypeLabels: Record<number, string> = {
   7: "مرتجع وارد",
   8: "مرتجع صادر",
   9: "رصيد افتتاحي",
+  10: "استهلاك إنتاج",
+  11: "إنتاج تام",
 };
 
 export interface LogHistory {
@@ -744,4 +746,64 @@ export const PayrollStatusLabel: Record<number, string> = {
   1: "معتمدة",
   2: "مدفوعة",
   3: "ملغاة",
+};
+
+// ─── Production ─────────────────────────────────────────────────────────
+
+export interface BomComponent {
+  id: string;
+  productId: string;
+  productName?: string | null;
+  productSku?: string | null;
+  quantity: number;
+  wastePercent: number;
+  currentCost: number;
+}
+
+export interface Bom {
+  id: string;
+  productId: string;
+  productName?: string | null;
+  name: string;
+  outputQuantity: number;
+  additionalCostPerUnit: number;
+  isActive: boolean;
+  notes?: string | null;
+  components: BomComponent[];
+  estimatedUnitCost: number;
+}
+
+export interface ProductionOrderItem {
+  id: string;
+  productId: string;
+  productName?: string | null;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+}
+
+export interface ProductionOrder {
+  id: string;
+  orderNumber: string;
+  billOfMaterialsId: string;
+  bomName?: string | null;
+  productId: string;
+  productName?: string | null;
+  warehouseId: string;
+  warehouseName?: string | null;
+  quantity: number;
+  totalCost: number;
+  unitCost: number;
+  status: number;
+  plannedDate: string;
+  completedDate?: string | null;
+  notes?: string | null;
+  items: ProductionOrderItem[];
+}
+
+export const ProductionOrderStatusLabel: Record<number, string> = {
+  0: "مسودة",
+  1: "قيد التنفيذ",
+  2: "مكتمل",
+  3: "ملغى",
 };

@@ -10,6 +10,8 @@ namespace Domain.Enums
         AdjustmentOut = 6,
         ReturnIn = 7,
         ReturnOut = 8,
-        OpeningBalance = 9
+        OpeningBalance = 9,
+        ProductionConsume = 10,
+        ProductionOutput = 11
     }
 }

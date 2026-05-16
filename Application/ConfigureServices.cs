@@ -11,6 +11,7 @@ using Application.Inerfaces.Loyalty;
 using Application.Inerfaces.Notifications;
 using Application.Inerfaces.Payments;
 using Application.Inerfaces.POS;
+using Application.Inerfaces.Production;
 using Application.Inerfaces.Reports;
 using Application.Services;
 using Application.Services.Accounting;
@@ -24,6 +25,7 @@ using Application.Services.Loyalty;
 using Application.Services.Notifications;
 using Application.Services.Payments;
 using Application.Services.POS;
+using Application.Services.Production;
 using Application.Services.Reports;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -51,6 +53,10 @@ public static class ConfigureServices
         services.AddScoped<IAttendanceService, AttendanceService>();
         services.AddScoped<ILeaveRequestService, LeaveRequestService>();
         services.AddScoped<IPayrollService, PayrollService>();
+
+        // Production
+        services.AddScoped<IBomService, BomService>();
+        services.AddScoped<IProductionOrderService, ProductionOrderService>();
 
         // Inventory
         services.AddScoped<ICategoryService, CategoryService>();

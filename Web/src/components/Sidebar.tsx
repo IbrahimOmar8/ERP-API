@@ -37,6 +37,7 @@ import {
   Webhook,
   Hourglass,
   UsersRound,
+  Factory,
 } from "lucide-react";
 
 type NavItem = {
@@ -61,6 +62,7 @@ const navItems: NavItem[] = [
   { href: "/stock", label: "الرصيد", icon: Warehouse },
   { href: "/stock-adjustment", label: "جرد المخزون", icon: ClipboardCheck },
   { href: "/transfers", label: "التحويلات", icon: ArrowLeftRight },
+  { href: "/production", label: "الإنتاج", icon: Factory },
   { href: "/sales-report", label: "تقرير المبيعات", icon: TrendingUp },
   { href: "/reports/pnl", label: "الأرباح والخسائر", icon: TrendingUp },
   { href: "/reports/cash-flow", label: "التدفق النقدي", icon: Banknote },
