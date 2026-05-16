@@ -338,16 +338,16 @@ namespace Application.Services.POS
                 throw;
             }
 
-            var dto = (await GetByIdAsync(sale.Id))!;
+            var saved = (await GetByIdAsync(sale.Id))!;
             await _webhooks.DispatchAsync(Application.DTOs.Integration.WebhookEvents.SaleCreated, new
             {
-                id = dto.Id,
-                invoiceNumber = dto.InvoiceNumber,
-                customerId = dto.CustomerId,
-                total = dto.Total,
-                saleDate = dto.SaleDate,
+                id = saved.Id,
+                invoiceNumber = saved.InvoiceNumber,
+                customerId = saved.CustomerId,
+                total = saved.Total,
+                saleDate = saved.SaleDate,
             });
-            return dto;
+            return saved;
         }
 
         public async Task<bool> CancelAsync(Guid id)
